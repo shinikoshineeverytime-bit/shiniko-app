@@ -14,7 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/Icon';
 import { useAuth, UserRole } from '../context/AuthContext';
 
 export default function WelcomeScreen() {
