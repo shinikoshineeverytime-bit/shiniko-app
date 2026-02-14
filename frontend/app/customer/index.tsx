@@ -375,13 +375,49 @@ export default function CustomerHomeScreen() {
           </View>
         ) : (
           <>
+            {/* Vehicle Selection */}
+            <TouchableOpacity 
+              style={styles.vehicleSelector}
+              onPress={() => {
+                if (vehicles.length === 0) {
+                  router.push('/profile/add-vehicle');
+                } else {
+                  setShowVehicleModal(true);
+                }
+              }}
+            >
+              {selectedVehicle ? (
+                <View style={styles.selectedVehicle}>
+                  {selectedVehicle.photo ? (
+                    <Image source={{ uri: selectedVehicle.photo }} style={styles.vehicleThumb} />
+                  ) : (
+                    <View style={styles.vehicleThumbPlaceholder}>
+                      <Ionicons name="car" size={20} color="#666" />
+                    </View>
+                  )}
+                  <View style={styles.vehicleInfo}>
+                    <Text style={styles.vehicleReg}>{selectedVehicle.registration}</Text>
+                    <Text style={styles.vehicleDetails}>
+                      {[selectedVehicle.colour, selectedVehicle.make].filter(Boolean).join(' • ')}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-down" size={20} color="#888" />
+                </View>
+              ) : (
+                <View style={styles.addVehiclePrompt}>
+                  <Ionicons name="add-circle-outline" size={24} color="#00D4AA" />
+                  <Text style={styles.addVehicleText}>Add your vehicle to get started</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          
             <View style={styles.priceContainer}>
               <Text style={styles.priceText}>$25.00</Text>
               <Text style={styles.priceLabel}>Exterior Car Wash</Text>
             </View>
             
             <TouchableOpacity
-              style={styles.requestButton}
+              style={[styles.requestButton, (!selectedVehicle || vehicles.length === 0) && styles.requestButtonDisabled]}
               onPress={requestWash}
               disabled={requesting}
             >
@@ -397,6 +433,69 @@ export default function CustomerHomeScreen() {
           </>
         )}
       </View>
+      
+      {/* Vehicle Selection Modal */}
+      <Modal
+        visible={showVehicleModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowVehicleModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Vehicle</Text>
+              <TouchableOpacity onPress={() => setShowVehicleModal(false)}>
+                <Ionicons name="close" size={24} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.vehicleList}>
+              {vehicles.map((vehicle) => (
+                <TouchableOpacity
+                  key={vehicle.id}
+                  style={[
+                    styles.vehicleOption,
+                    selectedVehicle?.id === vehicle.id && styles.vehicleOptionSelected
+                  ]}
+                  onPress={() => {
+                    setSelectedVehicle(vehicle);
+                    setShowVehicleModal(false);
+                  }}
+                >
+                  {vehicle.photo ? (
+                    <Image source={{ uri: vehicle.photo }} style={styles.vehicleOptionPhoto} />
+                  ) : (
+                    <View style={styles.vehicleOptionPhotoPlaceholder}>
+                      <Ionicons name="car" size={24} color="#666" />
+                    </View>
+                  )}
+                  <View style={styles.vehicleOptionInfo}>
+                    <Text style={styles.vehicleOptionReg}>{vehicle.registration}</Text>
+                    <Text style={styles.vehicleOptionDetails}>
+                      {[vehicle.colour, vehicle.make, vehicle.model].filter(Boolean).join(' • ')}
+                    </Text>
+                  </View>
+                  {selectedVehicle?.id === vehicle.id && (
+                    <Ionicons name="checkmark-circle" size={24} color="#00D4AA" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            
+            <TouchableOpacity
+              style={styles.addVehicleModalButton}
+              onPress={() => {
+                setShowVehicleModal(false);
+                router.push('/profile/add-vehicle');
+              }}
+            >
+              <Ionicons name="add" size={20} color="#00D4AA" />
+              <Text style={styles.addVehicleModalText}>Add New Vehicle</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
