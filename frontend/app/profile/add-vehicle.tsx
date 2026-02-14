@@ -21,11 +21,6 @@ import { useAuth } from '../../context/AuthContext';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
-const COLOUR_OPTIONS = [
-  'White', 'Black', 'Silver', 'Grey', 'Red', 'Blue', 
-  'Green', 'Yellow', 'Orange', 'Brown', 'Gold', 'Other'
-];
-
 export default function AddVehicleScreen() {
   const { user } = useAuth();
   const [registration, setRegistration] = useState('');
@@ -36,7 +31,6 @@ export default function AddVehicleScreen() {
   const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [showColourPicker, setShowColourPicker] = useState(false);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
