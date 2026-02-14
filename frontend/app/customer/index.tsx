@@ -164,6 +164,25 @@ export default function CustomerHomeScreen() {
       Alert.alert('Error', 'Location not available');
       return;
     }
+    
+    // Check if user has vehicles
+    if (vehicles.length === 0) {
+      Alert.alert(
+        'Vehicle Required',
+        'Please add your vehicle information before requesting a wash. This helps the washer find your car.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Add Vehicle', onPress: () => router.push('/profile/add-vehicle') }
+        ]
+      );
+      return;
+    }
+    
+    // Check if a vehicle is selected
+    if (!selectedVehicle) {
+      setShowVehicleModal(true);
+      return;
+    }
 
     setRequesting(true);
     try {
@@ -174,6 +193,14 @@ export default function CustomerHomeScreen() {
           latitude: location.latitude,
           longitude: location.longitude,
           address: address,
+        },
+        vehicle: {
+          registration: selectedVehicle.registration,
+          colour: selectedVehicle.colour,
+          make: selectedVehicle.make || null,
+          model: selectedVehicle.model || null,
+          photo: selectedVehicle.photo || null,
+          notes: selectedVehicle.notes || null,
         },
       });
       setActiveJob(response.data);
