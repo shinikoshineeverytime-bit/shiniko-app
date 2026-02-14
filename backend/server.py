@@ -525,6 +525,93 @@ async def add_location_review(location_id: str, review_input: LocationReviewCrea
 
 # ==================== END CAR WASH LOCATIONS ====================
 
+# ==================== CHAT / MESSAGING ====================
+
+class ChatMessage(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_id: str
+    sender_id: str
+    sender_name: str
+    sender_role: str  # "customer" or "washer"
+    message: str
+    is_quick_action: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ChatMessageCreate(BaseModel):
+    sender_id: str
+    sender_name: str
+    sender_role: str
+    message: str
+    is_quick_action: bool = False
+
+@api_router.get("/jobs/{job_id}/messages", response_model=List[ChatMessage])
+async def get_job_messages(job_id: str):
+    """Get all messages for a specific job"""
+    messages = await db.messages.find({"job_id": job_id}).sort("created_at", 1).to_list(100)
+    return [ChatMessage(**msg) for msg in messages]
+
+@api_router.post("/jobs/{job_id}/messages", response_model=ChatMessage)
+async def send_message(job_id: str, message_input: ChatMessageCreate):
+    """Send a message in a job chat"""
+    job = await db.jobs.find_one({"id": job_id})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    message = ChatMessage(job_id=job_id, **message_input.model_dump())
+    await db.messages.insert_one(message.model_dump())
+    
+    # Send push notification to the other party
+    if message_input.sender_role == "customer":
+        # Notify washer
+        if job.get("washer_id"):
+            washer = await db.users.find_one({"id": job["washer_id"]})
+            if washer and washer.get("push_token"):
+                await send_push_notification(
+                    washer["push_token"],
+                    f"Message from {message_input.sender_name}",
+                    message_input.message[:100],
+                    {"type": "chat_message", "job_id": job_id}
+                )
+    else:
+        # Notify customer
+        customer = await db.users.find_one({"id": job["customer_id"]})
+        if customer and customer.get("push_token"):
+            await send_push_notification(
+                customer["push_token"],
+                f"Message from {message_input.sender_name}",
+                message_input.message[:100],
+                {"type": "chat_message", "job_id": job_id}
+            )
+    
+    return message
+
+# Quick action messages
+QUICK_ACTIONS = {
+    "customer": [
+        {"id": "here", "message": "I'm at the location"},
+        {"id": "car_desc", "message": "My car is parked outside"},
+        {"id": "running_late", "message": "Running a few minutes late"},
+        {"id": "where_are_you", "message": "Where are you?"},
+        {"id": "thanks", "message": "Thank you!"},
+    ],
+    "washer": [
+        {"id": "on_way", "message": "On my way!"},
+        {"id": "arriving", "message": "Arriving in 5 minutes"},
+        {"id": "here", "message": "I'm here"},
+        {"id": "cant_find", "message": "I can't find your car, can you help?"},
+        {"id": "starting", "message": "Starting the wash now"},
+        {"id": "almost_done", "message": "Almost done!"},
+        {"id": "completed", "message": "All done! Your car is sparkling clean ✨"},
+    ]
+}
+
+@api_router.get("/chat/quick-actions")
+async def get_quick_actions(role: str = "customer"):
+    """Get quick action messages for a role"""
+    return QUICK_ACTIONS.get(role, QUICK_ACTIONS["customer"])
+
+# ==================== END CHAT / MESSAGING ====================
+
 @api_router.get("/")
 async def root():
     return {"message": "Shiniko Car Wash API", "version": "1.0.0"}
