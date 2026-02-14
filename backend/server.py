@@ -323,6 +323,208 @@ async def cancel_job(job_id: str):
     
     return WashJob(**updated_job)
 
+# ==================== CAR WASH LOCATIONS ====================
+
+class ServiceType(str, Enum):
+    basic_wash = "basic_wash"
+    premium_wash = "premium_wash"
+    full_detail = "full_detail"
+    interior_clean = "interior_clean"
+    wax_polish = "wax_polish"
+    tire_shine = "tire_shine"
+    engine_clean = "engine_clean"
+
+class DayHours(BaseModel):
+    open: str  # "09:00"
+    close: str  # "18:00"
+    is_closed: bool = False
+
+class OperatingHours(BaseModel):
+    monday: Optional[DayHours] = None
+    tuesday: Optional[DayHours] = None
+    wednesday: Optional[DayHours] = None
+    thursday: Optional[DayHours] = None
+    friday: Optional[DayHours] = None
+    saturday: Optional[DayHours] = None
+    sunday: Optional[DayHours] = None
+
+class ServiceOffered(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    duration_minutes: Optional[int] = None
+
+class CarWashLocation(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    location: Location
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+    operating_hours: Optional[OperatingHours] = None
+    services: List[ServiceOffered] = []
+    amenities: List[str] = []  # ["WiFi", "Waiting Area", "Coffee", "Air Conditioning"]
+    payment_methods: List[str] = []  # ["Cash", "Card", "Apple Pay"]
+    images: List[str] = []  # Base64 encoded images
+    logo: Optional[str] = None  # Base64 encoded logo
+    rating: float = 0.0
+    review_count: int = 0
+    owner_id: Optional[str] = None
+    is_verified: bool = False
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class CarWashLocationCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    location: Location
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+    operating_hours: Optional[OperatingHours] = None
+    services: List[ServiceOffered] = []
+    amenities: List[str] = []
+    payment_methods: List[str] = []
+    images: List[str] = []
+    logo: Optional[str] = None
+    owner_id: Optional[str] = None
+
+class CarWashLocationUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    location: Optional[Location] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+    operating_hours: Optional[OperatingHours] = None
+    services: Optional[List[ServiceOffered]] = None
+    amenities: Optional[List[str]] = None
+    payment_methods: Optional[List[str]] = None
+    images: Optional[List[str]] = None
+    logo: Optional[str] = None
+    is_active: Optional[bool] = None
+
+# Car Wash Location Routes
+@api_router.post("/locations", response_model=CarWashLocation)
+async def create_location(location_input: CarWashLocationCreate):
+    """Create a new car wash location listing"""
+    location_dict = location_input.model_dump()
+    location_obj = CarWashLocation(**location_dict)
+    await db.locations.insert_one(location_obj.model_dump())
+    return location_obj
+
+@api_router.get("/locations", response_model=List[CarWashLocation])
+async def get_locations(
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
+    radius_km: float = 50.0,
+    is_active: bool = True
+):
+    """Get all car wash locations, optionally filtered by proximity"""
+    query = {"is_active": is_active}
+    locations = await db.locations.find(query).sort("created_at", -1).to_list(100)
+    
+    result = [CarWashLocation(**loc) for loc in locations]
+    
+    # If coordinates provided, sort by distance
+    if lat is not None and lng is not None:
+        def calc_distance(loc):
+            from math import radians, sin, cos, sqrt, atan2
+            R = 6371  # Earth's radius in km
+            lat1, lon1 = radians(lat), radians(lng)
+            lat2 = radians(loc.location.latitude)
+            lon2 = radians(loc.location.longitude)
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+            c = 2 * atan2(sqrt(a), sqrt(1-a))
+            return R * c
+        
+        # Filter by radius and sort by distance
+        result = [loc for loc in result if calc_distance(loc) <= radius_km]
+        result.sort(key=calc_distance)
+    
+    return result
+
+@api_router.get("/locations/{location_id}", response_model=CarWashLocation)
+async def get_location(location_id: str):
+    """Get a specific car wash location by ID"""
+    location = await db.locations.find_one({"id": location_id})
+    if not location:
+        raise HTTPException(status_code=404, detail="Location not found")
+    return CarWashLocation(**location)
+
+@api_router.put("/locations/{location_id}", response_model=CarWashLocation)
+async def update_location(location_id: str, update_data: CarWashLocationUpdate):
+    """Update a car wash location"""
+    location = await db.locations.find_one({"id": location_id})
+    if not location:
+        raise HTTPException(status_code=404, detail="Location not found")
+    
+    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    update_dict["updated_at"] = datetime.utcnow()
+    
+    await db.locations.update_one({"id": location_id}, {"$set": update_dict})
+    updated = await db.locations.find_one({"id": location_id})
+    return CarWashLocation(**updated)
+
+@api_router.delete("/locations/{location_id}")
+async def delete_location(location_id: str):
+    """Delete (deactivate) a car wash location"""
+    result = await db.locations.update_one(
+        {"id": location_id},
+        {"$set": {"is_active": False, "updated_at": datetime.utcnow()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Location not found")
+    return {"message": "Location deleted"}
+
+@api_router.get("/locations/{location_id}/reviews")
+async def get_location_reviews(location_id: str):
+    """Get reviews for a specific location"""
+    reviews = await db.location_reviews.find({"location_id": location_id}).sort("created_at", -1).to_list(50)
+    return reviews
+
+class LocationReview(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    location_id: str
+    user_id: str
+    user_name: str
+    rating: int  # 1-5
+    comment: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class LocationReviewCreate(BaseModel):
+    user_id: str
+    user_name: str
+    rating: int
+    comment: Optional[str] = None
+
+@api_router.post("/locations/{location_id}/reviews")
+async def add_location_review(location_id: str, review_input: LocationReviewCreate):
+    """Add a review for a car wash location"""
+    location = await db.locations.find_one({"id": location_id})
+    if not location:
+        raise HTTPException(status_code=404, detail="Location not found")
+    
+    review = LocationReview(location_id=location_id, **review_input.model_dump())
+    await db.location_reviews.insert_one(review.model_dump())
+    
+    # Update location rating
+    all_reviews = await db.location_reviews.find({"location_id": location_id}).to_list(1000)
+    if all_reviews:
+        avg_rating = sum(r["rating"] for r in all_reviews) / len(all_reviews)
+        await db.locations.update_one(
+            {"id": location_id},
+            {"$set": {"rating": round(avg_rating, 1), "review_count": len(all_reviews)}}
+        )
+    
+    return review
+
+# ==================== END CAR WASH LOCATIONS ====================
+
 @api_router.get("/")
 async def root():
     return {"message": "Shiniko Car Wash API", "version": "1.0.0"}
