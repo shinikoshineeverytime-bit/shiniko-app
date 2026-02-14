@@ -272,6 +272,20 @@ export default function CustomerHomeScreen() {
               <Text style={styles.priceLabel}>Exterior Wash</Text>
             </View>
 
+            {/* Chat Button - show when washer is assigned */}
+            {(activeJob.status === 'accepted' || activeJob.status === 'in_progress') && activeJob.washer_id && (
+              <TouchableOpacity 
+                style={styles.chatButton}
+                onPress={() => router.push({ 
+                  pathname: '/chat/[jobId]', 
+                  params: { jobId: activeJob.id, otherName: activeJob.washer_name || 'Washer' } 
+                })}
+              >
+                <Ionicons name="chatbubble" size={20} color="#FFF" />
+                <Text style={styles.chatButtonText}>Message {activeJob.washer_name || 'Washer'}</Text>
+              </TouchableOpacity>
+            )}
+
             {activeJob.status === 'requested' && (
               <TouchableOpacity style={styles.cancelButton} onPress={cancelJob}>
                 <Text style={styles.cancelButtonText}>Cancel Request</Text>
