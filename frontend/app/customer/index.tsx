@@ -300,11 +300,11 @@ export default function CustomerHomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleLogout} style={styles.headerButton}>
-          <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
+          <Icon name="log-out-outline" size={24} color="#FF3B30" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SHINIKO</Text>
         <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileButton}>
-          <Ionicons name="person" size={18} color="#00D4AA" />
+          <Icon name="person" size={18} color="#00D4AA" />
         </TouchableOpacity>
       </View>
 
@@ -316,14 +316,14 @@ export default function CustomerHomeScreen() {
           style={styles.map}
         />
         <TouchableOpacity style={styles.recenterButton} onPress={recenterMap}>
-          <Ionicons name="locate" size={24} color="#00D4AA" />
+          <Icon name="locate" size={24} color="#00D4AA" />
         </TouchableOpacity>
       </View>
 
       {/* Bottom Panel */}
       <View style={styles.bottomPanel}>
         <View style={styles.locationInfo}>
-          <Ionicons name="location" size={24} color="#00D4AA" />
+          <Icon name="location" size={24} color="#00D4AA" />
           <View style={styles.locationTextContainer}>
             <Text style={styles.locationLabel}>Your Location</Text>
             <Text style={styles.locationAddress} numberOfLines={1}>{address || 'Getting address...'}</Text>
@@ -333,7 +333,7 @@ export default function CustomerHomeScreen() {
         {activeJob ? (
           <View style={styles.statusContainer}>
             <View style={[styles.statusBadge, { backgroundColor: statusInfo?.color + '20' }]}>
-              <Ionicons name={statusInfo?.icon as any} size={20} color={statusInfo?.color} />
+              <Icon name={statusInfo?.icon as any} size={20} color={statusInfo?.color} />
               <Text style={[styles.statusText, { color: statusInfo?.color }]}>
                 {statusInfo?.text}
               </Text>
@@ -353,7 +353,7 @@ export default function CustomerHomeScreen() {
                   params: { jobId: activeJob.id, otherName: activeJob.washer_name || 'Washer' } 
                 })}
               >
-                <Ionicons name="chatbubble" size={20} color="#FFF" />
+                <Icon name="chatbubble" size={20} color="#FFF" />
                 <Text style={styles.chatButtonText}>Message {activeJob.washer_name || 'Washer'}</Text>
               </TouchableOpacity>
             )}
@@ -392,7 +392,7 @@ export default function CustomerHomeScreen() {
                     <Image source={{ uri: selectedVehicle.photo }} style={styles.vehicleThumb} />
                   ) : (
                     <View style={styles.vehicleThumbPlaceholder}>
-                      <Ionicons name="car" size={20} color="#666" />
+                      <Icon name="car" size={20} color="#666" />
                     </View>
                   )}
                   <View style={styles.vehicleInfo}>
@@ -401,11 +401,11 @@ export default function CustomerHomeScreen() {
                       {[selectedVehicle.colour, selectedVehicle.make].filter(Boolean).join(' • ')}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-down" size={20} color="#888" />
+                  <Icon name="chevron-down" size={20} color="#888" />
                 </View>
               ) : (
                 <View style={styles.addVehiclePrompt}>
-                  <Ionicons name="add-circle-outline" size={24} color="#00D4AA" />
+                  <Icon name="add-circle-outline" size={24} color="#00D4AA" />
                   <Text style={styles.addVehicleText}>Add your vehicle to get started</Text>
                 </View>
               )}
@@ -425,7 +425,7 @@ export default function CustomerHomeScreen() {
                 <ActivityIndicator color="#0A0A0A" />
               ) : (
                 <>
-                  <Ionicons name="water" size={24} color="#0A0A0A" />
+                  <Icon name="water" size={24} color="#0A0A0A" />
                   <Text style={styles.requestButtonText}>Request Wash</Text>
                 </>
               )}
@@ -446,7 +446,7 @@ export default function CustomerHomeScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Vehicle</Text>
               <TouchableOpacity onPress={() => setShowVehicleModal(false)}>
-                <Ionicons name="close" size={24} color="#FFF" />
+                <Icon name="close" size={24} color="#FFF" />
               </TouchableOpacity>
             </View>
             
@@ -467,7 +467,7 @@ export default function CustomerHomeScreen() {
                     <Image source={{ uri: vehicle.photo }} style={styles.vehicleOptionPhoto} />
                   ) : (
                     <View style={styles.vehicleOptionPhotoPlaceholder}>
-                      <Ionicons name="car" size={24} color="#666" />
+                      <Icon name="car" size={24} color="#666" />
                     </View>
                   )}
                   <View style={styles.vehicleOptionInfo}>
@@ -477,7 +477,7 @@ export default function CustomerHomeScreen() {
                     </Text>
                   </View>
                   {selectedVehicle?.id === vehicle.id && (
-                    <Ionicons name="checkmark-circle" size={24} color="#00D4AA" />
+                    <Icon name="checkmark-circle" size={24} color="#00D4AA" />
                   )}
                 </TouchableOpacity>
               ))}
@@ -490,7 +490,7 @@ export default function CustomerHomeScreen() {
                 router.push('/profile/add-vehicle');
               }}
             >
-              <Ionicons name="add" size={20} color="#00D4AA" />
+              <Icon name="add" size={20} color="#00D4AA" />
               <Text style={styles.addVehicleModalText}>Add New Vehicle</Text>
             </TouchableOpacity>
           </View>
