@@ -620,6 +620,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 6,
   },
+  chatIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 122, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   statusDot: {
     width: 8,
     height: 8,
