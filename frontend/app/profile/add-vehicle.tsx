@@ -336,49 +336,6 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  colourSelector: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-  },
-  colourText: {
-    fontSize: 16,
-    color: '#FFF',
-  },
-  colourPlaceholder: {
-    fontSize: 16,
-    color: '#666',
-  },
-  colourGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-  },
-  colourOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#1A1A1A',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-  },
-  colourOptionSelected: {
-    backgroundColor: 'rgba(0, 212, 170, 0.15)',
-    borderColor: '#00D4AA',
-  },
-  colourOptionText: {
-    color: '#888',
-    fontSize: 14,
-  },
-  colourOptionTextSelected: {
-    color: '#00D4AA',
-  },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
