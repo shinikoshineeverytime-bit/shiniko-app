@@ -13,7 +13,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/Icon';
 import { router } from 'expo-router';
 import axios from 'axios';
 
@@ -169,7 +169,7 @@ export default function AddLocationScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="close" size={24} color="#FFF" />
+            <Icon name="close" size={24} color="#FFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Add Car Wash</Text>
           <View style={{ width: 40 }} />
@@ -203,7 +203,7 @@ export default function AddLocationScreen() {
               <ActivityIndicator color="#00D4AA" />
             ) : (
               <>
-                <Ionicons name="locate" size={20} color="#00D4AA" />
+                <Icon name="locate" size={20} color="#00D4AA" />
                 <Text style={styles.locationButtonText}>Use Current Location</Text>
               </>
             )}
@@ -270,7 +270,7 @@ export default function AddLocationScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Services & Pricing</Text>
             <TouchableOpacity onPress={addService}>
-              <Ionicons name="add-circle" size={24} color="#00D4AA" />
+              <Icon name="add-circle" size={24} color="#00D4AA" />
             </TouchableOpacity>
           </View>
 
@@ -280,7 +280,7 @@ export default function AddLocationScreen() {
                 <Text style={styles.serviceNumber}>Service {index + 1}</Text>
                 {services.length > 1 && (
                   <TouchableOpacity onPress={() => removeService(index)}>
-                    <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                    <Icon name="trash-outline" size={20} color="#FF3B30" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -334,7 +334,7 @@ export default function AddLocationScreen() {
               <ActivityIndicator color="#0A0A0A" />
             ) : (
               <>
-                <Ionicons name="checkmark" size={24} color="#0A0A0A" />
+                <Icon name="checkmark" size={24} color="#0A0A0A" />
                 <Text style={styles.submitButtonText}>Create Listing</Text>
               </>
             )}

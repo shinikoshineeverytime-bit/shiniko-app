@@ -11,7 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/Icon';
 import { router, useLocalSearchParams } from 'expo-router';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
@@ -130,7 +130,7 @@ export default function ChatScreen() {
 
   const renderEmptyChat = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="chatbubbles-outline" size={64} color="#333" />
+      <Icon name="chatbubbles-outline" size={64} color="#333" />
       <Text style={styles.emptyTitle}>Start the conversation</Text>
       <Text style={styles.emptySubtitle}>Send a message or use quick actions below</Text>
     </View>
@@ -151,7 +151,7 @@ export default function ChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Icon name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>{otherName || 'Chat'}</Text>
@@ -184,7 +184,7 @@ export default function ChatScreen() {
             <View style={styles.quickActionsHeader}>
               <Text style={styles.quickActionsTitle}>Quick Messages</Text>
               <TouchableOpacity onPress={() => setShowQuickActions(false)}>
-                <Ionicons name="chevron-down" size={20} color="#888" />
+                <Icon name="chevron-down" size={20} color="#888" />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -211,9 +211,9 @@ export default function ChatScreen() {
             style={styles.quickActionsToggle}
             onPress={() => setShowQuickActions(true)}
           >
-            <Ionicons name="flash" size={18} color="#00D4AA" />
+            <Icon name="flash" size={18} color="#00D4AA" />
             <Text style={styles.quickActionsToggleText}>Quick Messages</Text>
-            <Ionicons name="chevron-up" size={18} color="#00D4AA" />
+            <Icon name="chevron-up" size={18} color="#00D4AA" />
           </TouchableOpacity>
         )}
 
@@ -236,7 +236,7 @@ export default function ChatScreen() {
             {sending ? (
               <ActivityIndicator size="small" color="#0A0A0A" />
             ) : (
-              <Ionicons name="send" size={20} color="#0A0A0A" />
+              <Icon name="send" size={20} color="#0A0A0A" />
             )}
           </TouchableOpacity>
         </View>

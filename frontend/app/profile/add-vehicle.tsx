@@ -13,7 +13,7 @@ import {
   Image,
   KeyboardAvoidingView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/Icon';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
@@ -212,7 +212,7 @@ export default function AddVehicleScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="close" size={24} color="#FFF" />
+            <Icon name="close" size={24} color="#FFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Add Vehicle</Text>
           <View style={{ width: 40 }} />
@@ -225,14 +225,14 @@ export default function AddVehicleScreen() {
               <Image source={{ uri: photo }} style={styles.photoPreview} />
             ) : (
               <View style={styles.photoPlaceholder}>
-                <Ionicons name="camera" size={40} color="#666" />
+                <Icon name="camera" size={40} color="#666" />
                 <Text style={styles.photoPlaceholderText}>Tap to add a photo of your car</Text>
                 <Text style={styles.photoHint}>Helps the washer find your car (optional)</Text>
               </View>
             )}
             {photo && (
               <View style={styles.changePhotoOverlay}>
-                <Ionicons name="camera" size={20} color="#FFF" />
+                <Icon name="camera" size={20} color="#FFF" />
                 <Text style={styles.changePhotoText}>Change</Text>
               </View>
             )}
@@ -312,7 +312,7 @@ export default function AddVehicleScreen() {
               <ActivityIndicator color="#0A0A0A" />
             ) : (
               <>
-                <Ionicons name="checkmark" size={24} color="#0A0A0A" />
+                <Icon name="checkmark" size={24} color="#0A0A0A" />
                 <Text style={styles.saveButtonText}>Add Vehicle</Text>
               </>
             )}

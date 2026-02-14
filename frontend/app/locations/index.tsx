@@ -13,7 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/Icon';
 import { router } from 'expo-router';
 import axios from 'axios';
 
@@ -138,7 +138,7 @@ export default function LocationsScreen() {
             <Text style={styles.locationName} numberOfLines={1}>{item.name}</Text>
             {item.rating > 0 && (
               <View style={styles.ratingBadge}>
-                <Ionicons name="star" size={14} color="#FFB800" />
+                <Icon name="star" size={14} color="#FFB800" />
                 <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
                 <Text style={styles.reviewCount}>({item.review_count})</Text>
               </View>
@@ -150,7 +150,7 @@ export default function LocationsScreen() {
         </View>
 
         <View style={styles.locationInfo}>
-          <Ionicons name="location" size={16} color="#888" />
+          <Icon name="location" size={16} color="#888" />
           <Text style={styles.address} numberOfLines={1}>
             {item.location.address || 'Address available'}
           </Text>
@@ -187,14 +187,14 @@ export default function LocationsScreen() {
                 style={styles.callButton}
                 onPress={() => callLocation(item.phone!)}
               >
-                <Ionicons name="call" size={18} color="#00D4AA" />
+                <Icon name="call" size={18} color="#00D4AA" />
               </TouchableOpacity>
             )}
             <TouchableOpacity 
               style={styles.directionsButton}
               onPress={() => openDirections(item)}
             >
-              <Ionicons name="navigate" size={18} color="#FFF" />
+              <Icon name="navigate" size={18} color="#FFF" />
               <Text style={styles.directionsText}>Directions</Text>
             </TouchableOpacity>
           </View>
@@ -205,14 +205,14 @@ export default function LocationsScreen() {
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="business-outline" size={64} color="#333" />
+      <Icon name="business-outline" size={64} color="#333" />
       <Text style={styles.emptyTitle}>No car washes found</Text>
       <Text style={styles.emptySubtitle}>Be the first to add a location!</Text>
       <TouchableOpacity 
         style={styles.addFirstButton}
         onPress={() => router.push('/locations/add')}
       >
-        <Ionicons name="add" size={20} color="#0A0A0A" />
+        <Icon name="add" size={20} color="#0A0A0A" />
         <Text style={styles.addFirstButtonText}>Add Car Wash</Text>
       </TouchableOpacity>
     </View>
@@ -234,14 +234,14 @@ export default function LocationsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Icon name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Car Washes</Text>
         <TouchableOpacity 
           style={styles.addButton}
           onPress={() => router.push('/locations/add')}
         >
-          <Ionicons name="add" size={24} color="#00D4AA" />
+          <Icon name="add" size={24} color="#00D4AA" />
         </TouchableOpacity>
       </View>
 

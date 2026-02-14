@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/Icon';
 import { router } from 'expo-router';
 import axios from 'axios';
 import MapView, { MapViewHandle } from '../../components/MapView';
@@ -239,35 +239,35 @@ export default function WasherHomeScreen() {
     <View style={styles.jobCard}>
       <View style={styles.jobHeader}>
         <View style={styles.jobBadge}>
-          <Ionicons name="car" size={16} color="#00D4AA" />
+          <Icon name="car" size={16} color="#00D4AA" />
           <Text style={styles.jobBadgeText}>New Request</Text>
         </View>
         <Text style={styles.jobTime}>{formatTime(item.created_at)}</Text>
       </View>
 
       <View style={styles.customerInfo}>
-        <Ionicons name="person" size={16} color="#888" />
+        <Icon name="person" size={16} color="#888" />
         <Text style={styles.customerName}>{item.customer_name}</Text>
       </View>
 
       <TouchableOpacity style={styles.jobLocation} onPress={() => viewJobOnMap(item)}>
-        <Ionicons name="location" size={20} color="#888" />
+        <Icon name="location" size={20} color="#888" />
         <Text style={styles.jobAddress} numberOfLines={2}>
           {item.location.address || 'Location available'}
         </Text>
-        <Ionicons name="map-outline" size={18} color="#00D4AA" />
+        <Icon name="map-outline" size={18} color="#00D4AA" />
       </TouchableOpacity>
 
       <View style={styles.jobFooter}>
         <View style={styles.jobInfo}>
           <View style={styles.infoItem}>
-            <Ionicons name="navigate" size={16} color="#888" />
+            <Icon name="navigate" size={16} color="#888" />
             <Text style={styles.infoText}>
               {calculateDistance(item.location.latitude, item.location.longitude)}
             </Text>
           </View>
           <View style={styles.infoItem}>
-            <Ionicons name="cash" size={16} color="#00D4AA" />
+            <Icon name="cash" size={16} color="#00D4AA" />
             <Text style={[styles.infoText, { color: '#00D4AA' }]}>${item.price.toFixed(2)}</Text>
           </View>
         </View>
@@ -316,27 +316,27 @@ export default function WasherHomeScreen() {
               params: { jobId: item.id, otherName: item.customer_name } 
             })}
           >
-            <Ionicons name="chatbubble" size={18} color="#007AFF" />
+            <Icon name="chatbubble" size={18} color="#007AFF" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.customerInfo}>
-          <Ionicons name="person" size={16} color="#888" />
+          <Icon name="person" size={16} color="#888" />
           <Text style={styles.customerName}>{item.customer_name}</Text>
         </View>
 
         <TouchableOpacity style={styles.jobLocation} onPress={() => viewJobOnMap(item)}>
-          <Ionicons name="location" size={20} color="#888" />
+          <Icon name="location" size={20} color="#888" />
           <Text style={styles.jobAddress} numberOfLines={2}>
             {item.location.address || 'Location available'}
           </Text>
-          <Ionicons name="map-outline" size={18} color="#00D4AA" />
+          <Icon name="map-outline" size={18} color="#00D4AA" />
         </TouchableOpacity>
 
         <View style={styles.jobFooter}>
           <View style={styles.jobInfo}>
             <View style={styles.infoItem}>
-              <Ionicons name="cash" size={16} color="#00D4AA" />
+              <Icon name="cash" size={16} color="#00D4AA" />
               <Text style={[styles.infoText, { color: '#00D4AA' }]}>${item.price.toFixed(2)}</Text>
             </View>
           </View>
@@ -346,7 +346,7 @@ export default function WasherHomeScreen() {
               style={[styles.actionButton, { backgroundColor: '#007AFF' }]}
               onPress={() => startJob(item.id)}
             >
-              <Ionicons name="play" size={18} color="#FFF" />
+              <Icon name="play" size={18} color="#FFF" />
               <Text style={styles.actionButtonText}>Start Wash</Text>
             </TouchableOpacity>
           )}
@@ -356,7 +356,7 @@ export default function WasherHomeScreen() {
               style={[styles.actionButton, { backgroundColor: '#00D4AA' }]}
               onPress={() => completeJob(item.id)}
             >
-              <Ionicons name="checkmark" size={18} color="#0A0A0A" />
+              <Icon name="checkmark" size={18} color="#0A0A0A" />
               <Text style={[styles.actionButtonText, { color: '#0A0A0A' }]}>Complete</Text>
             </TouchableOpacity>
           )}
@@ -367,7 +367,7 @@ export default function WasherHomeScreen() {
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons 
+      <Icon 
         name={activeTab === 'available' ? 'car-outline' : 'briefcase-outline'} 
         size={64} 
         color="#333" 
@@ -399,7 +399,7 @@ export default function WasherHomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={showMap ? () => setShowMap(false) : handleLogout} style={styles.headerButton}>
-          <Ionicons name={showMap ? 'arrow-back' : 'log-out-outline'} size={24} color={showMap ? '#FFF' : '#FF3B30'} />
+          <Icon name={showMap ? 'arrow-back' : 'log-out-outline'} size={24} color={showMap ? '#FFF' : '#FF3B30'} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SHINIKO</Text>
         <View style={styles.headerRight}>
@@ -407,10 +407,10 @@ export default function WasherHomeScreen() {
             style={styles.mapToggle} 
             onPress={() => setShowMap(!showMap)}
           >
-            <Ionicons name={showMap ? 'list' : 'map'} size={20} color="#00D4AA" />
+            <Icon name={showMap ? 'list' : 'map'} size={20} color="#00D4AA" />
           </TouchableOpacity>
           <View style={styles.userBadge}>
-            <Ionicons name="person" size={12} color="#00D4AA" />
+            <Icon name="person" size={12} color="#00D4AA" />
             <Text style={styles.userName} numberOfLines={1}>{user?.name}</Text>
           </View>
         </View>

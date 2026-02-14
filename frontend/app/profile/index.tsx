@@ -12,7 +12,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/Icon';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
@@ -156,11 +156,11 @@ export default function ProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Icon name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Profile</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
+          <Icon name="log-out-outline" size={24} color="#FF3B30" />
         </TouchableOpacity>
       </View>
 
@@ -226,14 +226,14 @@ export default function ProfileScreen() {
               style={styles.addVehicleButton}
               onPress={() => router.push('/profile/add-vehicle')}
             >
-              <Ionicons name="add" size={20} color="#00D4AA" />
+              <Icon name="add" size={20} color="#00D4AA" />
               <Text style={styles.addVehicleText}>Add</Text>
             </TouchableOpacity>
           </View>
 
           {vehicles.length === 0 ? (
             <View style={styles.emptyVehicles}>
-              <Ionicons name="car-outline" size={48} color="#333" />
+              <Icon name="car-outline" size={48} color="#333" />
               <Text style={styles.emptyText}>No vehicles added yet</Text>
               <Text style={styles.emptySubtext}>Add your car to request washes faster</Text>
             </View>
@@ -245,7 +245,7 @@ export default function ProfileScreen() {
                     <Image source={{ uri: vehicle.photo }} style={styles.vehiclePhoto} />
                   ) : (
                     <View style={styles.vehiclePhotoPlaceholder}>
-                      <Ionicons name="car" size={32} color="#666" />
+                      <Icon name="car" size={32} color="#666" />
                     </View>
                   )}
                   <View style={styles.vehicleInfo}>
@@ -271,20 +271,20 @@ export default function ProfileScreen() {
                       style={styles.vehicleActionButton}
                       onPress={() => setDefaultVehicle(vehicle.id)}
                     >
-                      <Ionicons name="star-outline" size={18} color="#FFB800" />
+                      <Icon name="star-outline" size={18} color="#FFB800" />
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
                     style={styles.vehicleActionButton}
                     onPress={() => router.push({ pathname: '/profile/edit-vehicle', params: { vehicleId: vehicle.id } })}
                   >
-                    <Ionicons name="pencil" size={18} color="#007AFF" />
+                    <Icon name="pencil" size={18} color="#007AFF" />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.vehicleActionButton}
                     onPress={() => deleteVehicle(vehicle.id)}
                   >
-                    <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                    <Icon name="trash-outline" size={18} color="#FF3B30" />
                   </TouchableOpacity>
                 </View>
               </View>
