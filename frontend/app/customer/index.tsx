@@ -47,6 +47,11 @@ export default function CustomerHomeScreen() {
   const [requesting, setRequesting] = useState(false);
   const [activeJob, setActiveJob] = useState<any>(null);
   const mapRef = useRef<MapViewHandle>(null);
+  
+  // Vehicle state
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [showVehicleModal, setShowVehicleModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -55,7 +60,34 @@ export default function CustomerHomeScreen() {
     }
     getLocation();
     checkActiveJob();
+    fetchVehicles();
   }, [user]);
+  
+  // Refetch vehicles when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) {
+        fetchVehicles();
+      }
+    }, [user])
+  );
+  
+  const fetchVehicles = async () => {
+    if (!user) return;
+    try {
+      const response = await axios.get(`${API_URL}/api/users/${user.id}/vehicles`);
+      const vehicleList = response.data;
+      setVehicles(vehicleList);
+      
+      // Auto-select default vehicle or first vehicle
+      if (vehicleList.length > 0 && !selectedVehicle) {
+        const defaultVehicle = vehicleList.find((v: Vehicle) => v.is_default) || vehicleList[0];
+        setSelectedVehicle(defaultVehicle);
+      }
+    } catch (error) {
+      console.error('Error fetching vehicles:', error);
+    }
+  };
 
   // Refresh when notification received
   useEffect(() => {
