@@ -101,3 +101,147 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Build Shiniko - an on-demand exterior car wash service app with Customer and Washer roles. Customers request washes at their GPS location, washers accept and complete jobs. MVP with map, job status tracking, simple role selection."
+
+backend:
+  - task: "User creation and management API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented POST /api/users, GET /api/users/{id}, PUT /api/users/{id}/location"
+
+  - task: "Job creation API (customer requests wash)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented POST /api/jobs with customer_id, customer_name, and location"
+
+  - task: "Get available jobs API (for washers)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented GET /api/jobs/available returns jobs with status=requested"
+
+  - task: "Accept job API (washer accepts)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented PUT /api/jobs/{id}/accept with washer_id and washer_name"
+
+  - task: "Job status updates API (start, complete, cancel)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented PUT /api/jobs/{id}/start, /complete, /cancel"
+
+  - task: "Filter jobs by customer/washer ID"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented GET /api/jobs with optional customer_id, washer_id, status filters"
+
+frontend:
+  - task: "Role selection screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Landing page with Customer/Washer role selection"
+
+  - task: "Customer map view with GPS location"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/customer/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Map showing current location with marker, request wash button"
+
+  - task: "Customer job request and status tracking"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/customer/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Request wash, track status, cancel functionality"
+
+  - task: "Washer job list (available and my jobs)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/washer/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Tabs for available jobs and accepted jobs, with accept/start/complete actions"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Job creation API (customer requests wash)"
+    - "Get available jobs API (for washers)"
+    - "Accept job API (washer accepts)"
+    - "Job status updates API (start, complete, cancel)"
+  stuck_tasks: []
+  test_all: true
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented full Shiniko MVP backend with job lifecycle (requested->accepted->in_progress->completed). Please test all job-related endpoints."
