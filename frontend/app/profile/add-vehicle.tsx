@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -31,47 +31,87 @@ export default function AddVehicleScreen() {
   const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please allow access to your photos');
-      return;
+    try {
+      // For web, use file input
+      if (Platform.OS === 'web') {
+        fileInputRef.current?.click();
+        return;
+      }
+      
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow access to your photos');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.5,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0].base64) {
+        setPhoto(`data:image/jpeg;base64,${result.assets[0].base64}`);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
     }
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.5,
-      base64: true,
-    });
-
-    if (!result.canceled && result.assets[0].base64) {
-      setPhoto(`data:image/jpeg;base64,${result.assets[0].base64}`);
+  const handleWebFileSelect = (event: any) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please allow access to your camera');
-      return;
-    }
+    try {
+      if (Platform.OS === 'web') {
+        // On web, just use file picker
+        fileInputRef.current?.click();
+        return;
+      }
+      
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow access to your camera');
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.5,
-      base64: true,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.5,
+        base64: true,
+      });
 
-    if (!result.canceled && result.assets[0].base64) {
-      setPhoto(`data:image/jpeg;base64,${result.assets[0].base64}`);
+      if (!result.canceled && result.assets[0].base64) {
+        setPhoto(`data:image/jpeg;base64,${result.assets[0].base64}`);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo');
     }
   };
 
   const showPhotoOptions = () => {
+    if (Platform.OS === 'web') {
+      // On web, directly open file picker
+      fileInputRef.current?.click();
+      return;
+    }
+    
     Alert.alert(
       'Add Photo',
       'Choose how to add a photo of your car',
@@ -84,19 +124,27 @@ export default function AddVehicleScreen() {
   };
 
   const handleSave = async () => {
+    console.log('handleSave called');
+    
     if (!registration.trim()) {
       Alert.alert('Required', 'Please enter your car registration');
       return;
     }
     if (!colour.trim()) {
-      Alert.alert('Required', 'Please select your car colour');
+      Alert.alert('Required', 'Please enter your car colour');
       return;
     }
-    if (!user) return;
+    if (!user) {
+      console.log('No user found');
+      Alert.alert('Error', 'Please log in first');
+      return;
+    }
 
+    console.log('Saving vehicle for user:', user.id);
     setSaving(true);
+    
     try {
-      await axios.post(`${API_URL}/api/users/${user.id}/vehicles`, {
+      const vehicleData = {
         registration: registration.trim().toUpperCase(),
         colour: colour.trim(),
         make: make.trim() || null,
@@ -104,12 +152,19 @@ export default function AddVehicleScreen() {
         year: year ? parseInt(year) : null,
         notes: notes.trim() || null,
         photo: photo || null,
-      });
+      };
+      
+      console.log('Vehicle data:', { ...vehicleData, photo: photo ? 'has photo' : 'no photo' });
+      
+      const response = await axios.post(`${API_URL}/api/users/${user.id}/vehicles`, vehicleData);
+      console.log('Vehicle saved:', response.data);
+      
       Alert.alert('Success!', 'Vehicle added to your account', [
         { text: 'OK', onPress: () => router.back() }
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding vehicle:', error);
+      console.error('Error response:', error.response?.data);
       Alert.alert('Error', 'Failed to add vehicle. Please try again.');
     } finally {
       setSaving(false);
