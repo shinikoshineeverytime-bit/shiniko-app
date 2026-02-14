@@ -10,16 +10,15 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
-  Dimensions,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import axios from 'axios';
 import MapView, { MapViewHandle } from '../../components/MapView';
+import { useAuth } from '../../context/AuthContext';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-const { height } = Dimensions.get('window');
 
 interface Job {
   id: string;
@@ -38,20 +37,24 @@ interface Job {
 }
 
 export default function WasherHomeScreen() {
+  const { user, logout } = useAuth();
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [activeTab, setActiveTab] = useState<'available' | 'my_jobs'>('available');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [washerId] = useState(() => `washer_${Date.now()}`);
   const [washerLocation, setWasherLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [showMap, setShowMap] = useState(false);
   const mapRef = useRef<MapViewHandle>(null);
 
   useEffect(() => {
+    if (!user) {
+      router.replace('/');
+      return;
+    }
     getLocation();
     fetchJobs();
-  }, []);
+  }, [user]);
 
   // Auto-refresh every 10 seconds
   useEffect(() => {
@@ -66,7 +69,6 @@ export default function WasherHomeScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Location permission is needed to see nearby jobs');
-        // Set demo location
         setWasherLocation({ latitude: 40.7128, longitude: -74.0060 });
         return;
       }
@@ -82,10 +84,11 @@ export default function WasherHomeScreen() {
   };
 
   const fetchJobs = async () => {
+    if (!user) return;
     try {
       const [availableRes, myJobsRes] = await Promise.all([
         axios.get(`${API_URL}/api/jobs/available`),
-        axios.get(`${API_URL}/api/jobs?washer_id=${washerId}`),
+        axios.get(`${API_URL}/api/jobs?washer_id=${user.id}`),
       ]);
       setAvailableJobs(availableRes.data);
       setMyJobs(myJobsRes.data.filter((j: Job) => j.status !== 'completed' && j.status !== 'cancelled'));
@@ -103,10 +106,11 @@ export default function WasherHomeScreen() {
   }, []);
 
   const acceptJob = async (jobId: string) => {
+    if (!user) return;
     try {
       await axios.put(`${API_URL}/api/jobs/${jobId}/accept`, {
-        washer_id: washerId,
-        washer_name: 'Washer',
+        washer_id: user.id,
+        washer_name: user.name,
       });
       Alert.alert('Success', 'Job accepted! Navigate to the customer.');
       fetchJobs();
@@ -142,6 +146,24 @@ export default function WasherHomeScreen() {
             } catch (error: any) {
               Alert.alert('Error', error.response?.data?.detail || 'Failed to complete job');
             }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/');
           },
         },
       ]
@@ -208,6 +230,11 @@ export default function WasherHomeScreen() {
         <Text style={styles.jobTime}>{formatTime(item.created_at)}</Text>
       </View>
 
+      <View style={styles.customerInfo}>
+        <Ionicons name="person" size={16} color="#888" />
+        <Text style={styles.customerName}>{item.customer_name}</Text>
+      </View>
+
       <TouchableOpacity style={styles.jobLocation} onPress={() => viewJobOnMap(item)}>
         <Ionicons name="location" size={20} color="#888" />
         <Text style={styles.jobAddress} numberOfLines={2}>
@@ -266,6 +293,11 @@ export default function WasherHomeScreen() {
               {getStatusText()}
             </Text>
           </View>
+        </View>
+
+        <View style={styles.customerInfo}>
+          <Ionicons name="person" size={16} color="#888" />
+          <Text style={styles.customerName}>{item.customer_name}</Text>
         </View>
 
         <TouchableOpacity style={styles.jobLocation} onPress={() => viewJobOnMap(item)}>
@@ -341,8 +373,8 @@ export default function WasherHomeScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => showMap ? setShowMap(false) : router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+        <TouchableOpacity onPress={showMap ? () => setShowMap(false) : handleLogout} style={styles.headerButton}>
+          <Ionicons name={showMap ? 'arrow-back' : 'log-out-outline'} size={24} color={showMap ? '#FFF' : '#FF3B30'} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SHINIKO</Text>
         <View style={styles.headerRight}>
@@ -352,9 +384,9 @@ export default function WasherHomeScreen() {
           >
             <Ionicons name={showMap ? 'list' : 'map'} size={20} color="#00D4AA" />
           </TouchableOpacity>
-          <View style={styles.onlineBadge}>
-            <View style={styles.onlineDot} />
-            <Text style={styles.onlineText}>Online</Text>
+          <View style={styles.userBadge}>
+            <Ionicons name="person" size={12} color="#00D4AA" />
+            <Text style={styles.userName} numberOfLines={1}>{user?.name}</Text>
           </View>
         </View>
       </View>
@@ -435,7 +467,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  backButton: {
+  headerButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
@@ -460,23 +492,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  onlineBadge: {
+  userBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 212, 170, 0.15)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 12,
+    gap: 4,
+    maxWidth: 80,
   },
-  onlineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#00D4AA',
-    marginRight: 6,
-  },
-  onlineText: {
-    fontSize: 12,
+  userName: {
+    fontSize: 11,
     color: '#00D4AA',
     fontWeight: '600',
   },
@@ -548,6 +575,17 @@ const styles = StyleSheet.create({
   jobTime: {
     fontSize: 12,
     color: '#666',
+  },
+  customerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  customerName: {
+    fontSize: 14,
+    color: '#FFF',
+    fontWeight: '500',
   },
   statusBadge: {
     flexDirection: 'row',

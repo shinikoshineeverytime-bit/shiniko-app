@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import axios from 'axios';
 import MapView, { MapViewHandle } from '../../components/MapView';
+import { useAuth } from '../../context/AuthContext';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
@@ -23,18 +24,22 @@ interface LocationCoords {
 }
 
 export default function CustomerHomeScreen() {
+  const { user, logout } = useAuth();
   const [location, setLocation] = useState<LocationCoords | null>(null);
   const [address, setAddress] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
   const [activeJob, setActiveJob] = useState<any>(null);
-  const [userId] = useState(() => `customer_${Date.now()}`);
   const mapRef = useRef<MapViewHandle>(null);
 
   useEffect(() => {
+    if (!user) {
+      router.replace('/');
+      return;
+    }
     getLocation();
     checkActiveJob();
-  }, []);
+  }, [user]);
 
   // Poll for job updates
   useEffect(() => {
@@ -51,7 +56,6 @@ export default function CustomerHomeScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Location permission is required to use this app');
-        // Set a default location for demo
         setLocation({ latitude: 40.7128, longitude: -74.0060 });
         setAddress('New York, NY (Demo)');
         setLoading(false);
@@ -68,7 +72,6 @@ export default function CustomerHomeScreen() {
       };
       setLocation(coords);
 
-      // Get address
       try {
         const [addressResult] = await Location.reverseGeocodeAsync(coords);
         if (addressResult) {
@@ -80,7 +83,6 @@ export default function CustomerHomeScreen() {
       }
     } catch (error) {
       console.error('Error getting location:', error);
-      // Set default location on error
       setLocation({ latitude: 40.7128, longitude: -74.0060 });
       setAddress('New York, NY (Demo)');
     } finally {
@@ -89,8 +91,9 @@ export default function CustomerHomeScreen() {
   };
 
   const checkActiveJob = async () => {
+    if (!user) return;
     try {
-      const response = await axios.get(`${API_URL}/api/jobs?customer_id=${userId}`);
+      const response = await axios.get(`${API_URL}/api/jobs?customer_id=${user.id}`);
       const jobs = response.data;
       const active = jobs.find((job: any) => 
         job.status !== 'completed' && job.status !== 'cancelled'
@@ -102,7 +105,7 @@ export default function CustomerHomeScreen() {
   };
 
   const requestWash = async () => {
-    if (!location) {
+    if (!location || !user) {
       Alert.alert('Error', 'Location not available');
       return;
     }
@@ -110,8 +113,8 @@ export default function CustomerHomeScreen() {
     setRequesting(true);
     try {
       const response = await axios.post(`${API_URL}/api/jobs`, {
-        customer_id: userId,
-        customer_name: 'Customer',
+        customer_id: user.id,
+        customer_name: user.name,
         location: {
           latitude: location.latitude,
           longitude: location.longitude,
@@ -146,6 +149,24 @@ export default function CustomerHomeScreen() {
             } catch (error) {
               Alert.alert('Error', 'Failed to cancel request');
             }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/');
           },
         },
       ]
@@ -196,11 +217,14 @@ export default function CustomerHomeScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+        <TouchableOpacity onPress={handleLogout} style={styles.headerButton}>
+          <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SHINIKO</Text>
-        <View style={{ width: 40 }} />
+        <View style={styles.userBadge}>
+          <Ionicons name="person" size={14} color="#00D4AA" />
+          <Text style={styles.userName} numberOfLines={1}>{user?.name}</Text>
+        </View>
       </View>
 
       {/* Map */}
@@ -210,8 +234,6 @@ export default function CustomerHomeScreen() {
           location={location}
           style={styles.map}
         />
-
-        {/* Recenter button */}
         <TouchableOpacity style={styles.recenterButton} onPress={recenterMap}>
           <Ionicons name="locate" size={24} color="#00D4AA" />
         </TouchableOpacity>
@@ -219,7 +241,6 @@ export default function CustomerHomeScreen() {
 
       {/* Bottom Panel */}
       <View style={styles.bottomPanel}>
-        {/* Location Info */}
         <View style={styles.locationInfo}>
           <Ionicons name="location" size={24} color="#00D4AA" />
           <View style={styles.locationTextContainer}>
@@ -228,7 +249,6 @@ export default function CustomerHomeScreen() {
           </View>
         </View>
 
-        {/* Status or Request Button */}
         {activeJob ? (
           <View style={styles.statusContainer}>
             <View style={[styles.statusBadge, { backgroundColor: statusInfo?.color + '20' }]}>
@@ -309,7 +329,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#0A0A0A',
   },
-  backButton: {
+  headerButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
@@ -320,6 +340,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
     letterSpacing: 4,
+  },
+  userBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 212, 170, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
+    maxWidth: 100,
+  },
+  userName: {
+    fontSize: 12,
+    color: '#00D4AA',
+    fontWeight: '600',
   },
   mapContainer: {
     flex: 1,
