@@ -303,10 +303,9 @@ export default function CustomerHomeScreen() {
           <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SHINIKO</Text>
-        <View style={styles.userBadge}>
-          <Ionicons name="person" size={14} color="#00D4AA" />
-          <Text style={styles.userName} numberOfLines={1}>{user?.name}</Text>
-        </View>
+        <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileButton}>
+          <Ionicons name="person" size={18} color="#00D4AA" />
+        </TouchableOpacity>
       </View>
 
       {/* Map */}
