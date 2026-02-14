@@ -164,38 +164,13 @@ export default function AddVehicleScreen() {
 
           {/* Colour */}
           <Text style={styles.label}>Colour *</Text>
-          <TouchableOpacity
-            style={styles.colourSelector}
-            onPress={() => setShowColourPicker(!showColourPicker)}
-          >
-            <Text style={colour ? styles.colourText : styles.colourPlaceholder}>
-              {colour || 'Select colour'}
-            </Text>
-            <Ionicons name={showColourPicker ? 'chevron-up' : 'chevron-down'} size={20} color="#888" />
-          </TouchableOpacity>
-
-          {showColourPicker && (
-            <View style={styles.colourGrid}>
-              {COLOUR_OPTIONS.map((c) => (
-                <TouchableOpacity
-                  key={c}
-                  style={[
-                    styles.colourOption,
-                    colour === c && styles.colourOptionSelected
-                  ]}
-                  onPress={() => {
-                    setColour(c);
-                    setShowColourPicker(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.colourOptionText,
-                    colour === c && styles.colourOptionTextSelected
-                  ]}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          <TextInput
+            style={styles.input}
+            value={colour}
+            onChangeText={setColour}
+            placeholder="e.g., White, Black, Silver, Red"
+            placeholderTextColor="#666"
+          />
 
           {/* Make & Model */}
           <Text style={styles.label}>Make (optional)</Text>
