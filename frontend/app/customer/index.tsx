@@ -8,10 +8,13 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Modal,
+  ScrollView,
+  Image,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import axios from 'axios';
 import MapView, { MapViewHandle } from '../../components/MapView';
 import { useAuth } from '../../context/AuthContext';
@@ -22,6 +25,17 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 interface LocationCoords {
   latitude: number;
   longitude: number;
+}
+
+interface Vehicle {
+  id: string;
+  registration: string;
+  colour: string;
+  make?: string;
+  model?: string;
+  photo?: string;
+  notes?: string;
+  is_default: boolean;
 }
 
 export default function CustomerHomeScreen() {
