@@ -13,7 +13,7 @@ import {
   Image,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/Icon';
 import { router, useFocusEffect } from 'expo-router';
 import axios from 'axios';
 import MapView, { MapViewHandle } from '../../components/MapView';
