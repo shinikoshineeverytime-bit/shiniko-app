@@ -224,6 +224,114 @@ async def update_push_token(user_id: str, token_data: PushTokenUpdate):
     logging.info(f"Updated push token for user {user_id}")
     return {"message": "Push token updated"}
 
+@api_router.put("/users/{user_id}/profile")
+async def update_user_profile(user_id: str, update_data: UserUpdate):
+    """Update user profile information"""
+    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": update_dict}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    updated_user = await db.users.find_one({"id": user_id})
+    return User(**updated_user)
+
+# Vehicle routes
+@api_router.post("/users/{user_id}/vehicles", response_model=Vehicle)
+async def add_vehicle(user_id: str, vehicle_input: VehicleCreate):
+    """Add a vehicle to user's account"""
+    # Check user exists
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # If this is the first vehicle or marked as default, set it as default
+    existing_vehicles = await db.vehicles.find({"owner_id": user_id}).to_list(100)
+    
+    vehicle_dict = vehicle_input.model_dump()
+    vehicle_dict["owner_id"] = user_id
+    
+    # If no existing vehicles, make this one default
+    if not existing_vehicles:
+        vehicle_dict["is_default"] = True
+    elif vehicle_input.is_default:
+        # Unset default on other vehicles
+        await db.vehicles.update_many(
+            {"owner_id": user_id},
+            {"$set": {"is_default": False}}
+        )
+    
+    vehicle = Vehicle(**vehicle_dict)
+    await db.vehicles.insert_one(vehicle.model_dump())
+    return vehicle
+
+@api_router.get("/users/{user_id}/vehicles", response_model=List[Vehicle])
+async def get_user_vehicles(user_id: str):
+    """Get all vehicles for a user"""
+    vehicles = await db.vehicles.find({"owner_id": user_id}).sort("created_at", -1).to_list(100)
+    return [Vehicle(**v) for v in vehicles]
+
+@api_router.get("/users/{user_id}/vehicles/default")
+async def get_default_vehicle(user_id: str):
+    """Get user's default vehicle"""
+    vehicle = await db.vehicles.find_one({"owner_id": user_id, "is_default": True})
+    if not vehicle:
+        # Return first vehicle if no default set
+        vehicle = await db.vehicles.find_one({"owner_id": user_id})
+    if not vehicle:
+        return None
+    return Vehicle(**vehicle)
+
+@api_router.put("/vehicles/{vehicle_id}", response_model=Vehicle)
+async def update_vehicle(vehicle_id: str, update_data: VehicleUpdate):
+    """Update a vehicle"""
+    vehicle = await db.vehicles.find_one({"id": vehicle_id})
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    
+    # If setting as default, unset others
+    if update_data.is_default:
+        await db.vehicles.update_many(
+            {"owner_id": vehicle["owner_id"], "id": {"$ne": vehicle_id}},
+            {"$set": {"is_default": False}}
+        )
+    
+    await db.vehicles.update_one({"id": vehicle_id}, {"$set": update_dict})
+    updated = await db.vehicles.find_one({"id": vehicle_id})
+    return Vehicle(**updated)
+
+@api_router.delete("/vehicles/{vehicle_id}")
+async def delete_vehicle(vehicle_id: str):
+    """Delete a vehicle"""
+    result = await db.vehicles.delete_one({"id": vehicle_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    return {"message": "Vehicle deleted"}
+
+@api_router.put("/vehicles/{vehicle_id}/set-default")
+async def set_default_vehicle(vehicle_id: str):
+    """Set a vehicle as default"""
+    vehicle = await db.vehicles.find_one({"id": vehicle_id})
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    # Unset default on all other vehicles for this user
+    await db.vehicles.update_many(
+        {"owner_id": vehicle["owner_id"]},
+        {"$set": {"is_default": False}}
+    )
+    
+    # Set this one as default
+    await db.vehicles.update_one({"id": vehicle_id}, {"$set": {"is_default": True}})
+    return {"message": "Default vehicle updated"}
+
 # Job routes
 @api_router.post("/jobs", response_model=WashJob)
 async def create_job(job_input: JobCreate):
