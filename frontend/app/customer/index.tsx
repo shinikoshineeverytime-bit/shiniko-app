@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,6 @@ import {
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import axios from 'axios';
-import MapComponent from '../../components/MapComponent';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
