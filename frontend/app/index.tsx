@@ -151,7 +151,7 @@ export default function WelcomeScreen() {
             // Name Input
             <>
               <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                <Ionicons name="arrow-back" size={24} color="#FFF" />
+                <Icon name="arrow-back" size={24} color="#FFF" />
               </TouchableOpacity>
 
               <View style={styles.nameInputSection}>
@@ -159,7 +159,7 @@ export default function WelcomeScreen() {
                   styles.selectedRoleBadge,
                   { backgroundColor: selectedRole === 'customer' ? 'rgba(0, 212, 170, 0.15)' : 'rgba(0, 122, 255, 0.15)' }
                 ]}>
-                  <Ionicons 
+                  <Icon 
                     name={selectedRole === 'customer' ? 'car-sport' : 'water'} 
                     size={20} 
                     color={selectedRole === 'customer' ? '#00D4AA' : '#007AFF'} 
@@ -200,7 +200,7 @@ export default function WelcomeScreen() {
                   ) : (
                     <>
                       <Text style={styles.continueButtonText}>Get Started</Text>
-                      <Ionicons name="arrow-forward" size={20} color="#0A0A0A" />
+                      <Icon name="arrow-forward" size={20} color="#0A0A0A" />
                     </>
                   )}
                 </TouchableOpacity>
