@@ -11,7 +11,7 @@ from datetime import datetime
 import time
 
 # Use the backend URL from environment
-BASE_URL = "https://mobile-shine-4.preview.emergentagent.com/api"
+BASE_URL = "https://quickwash-app-3.preview.emergentagent.com/api"
 
 class ShinkoAPITester:
     def __init__(self):
