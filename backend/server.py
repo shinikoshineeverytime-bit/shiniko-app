@@ -45,10 +45,55 @@ class Location(BaseModel):
     longitude: float
     address: Optional[str] = None
 
+# Vehicle Model
+class Vehicle(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    owner_id: str
+    registration: str  # Car registration/plate number
+    colour: str
+    make: Optional[str] = None  # e.g., "Toyota"
+    model: Optional[str] = None  # e.g., "Camry"
+    year: Optional[int] = None
+    photo: Optional[str] = None  # Base64 encoded photo
+    notes: Optional[str] = None  # Extra info
+    is_default: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class VehicleCreate(BaseModel):
+    registration: str
+    colour: str
+    make: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[int] = None
+    photo: Optional[str] = None
+    notes: Optional[str] = None
+    is_default: bool = False
+
+class VehicleUpdate(BaseModel):
+    registration: Optional[str] = None
+    colour: Optional[str] = None
+    make: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[int] = None
+    photo: Optional[str] = None
+    notes: Optional[str] = None
+    is_default: Optional[bool] = None
+
+# Vehicle info for jobs
+class JobVehicleInfo(BaseModel):
+    registration: str
+    colour: str
+    make: Optional[str] = None
+    model: Optional[str] = None
+    photo: Optional[str] = None
+    notes: Optional[str] = None
+
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     role: UserRole
+    phone: Optional[str] = None
+    email: Optional[str] = None
     location: Optional[Location] = None
     push_token: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -57,7 +102,14 @@ class User(BaseModel):
 class UserCreate(BaseModel):
     name: str
     role: UserRole
+    phone: Optional[str] = None
+    email: Optional[str] = None
     location: Optional[Location] = None
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
 
 class PushTokenUpdate(BaseModel):
     push_token: str
@@ -69,6 +121,7 @@ class WashJob(BaseModel):
     washer_id: Optional[str] = None
     washer_name: Optional[str] = None
     location: Location
+    vehicle: Optional[JobVehicleInfo] = None  # Vehicle info for the job
     status: JobStatus = JobStatus.requested
     created_at: datetime = Field(default_factory=datetime.utcnow)
     accepted_at: Optional[datetime] = None
@@ -79,6 +132,7 @@ class JobCreate(BaseModel):
     customer_id: str
     customer_name: str
     location: Location
+    vehicle: JobVehicleInfo  # Required vehicle info
 
 class JobAccept(BaseModel):
     washer_id: str
