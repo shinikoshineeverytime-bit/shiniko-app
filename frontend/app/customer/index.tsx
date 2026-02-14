@@ -535,20 +535,13 @@ const styles = StyleSheet.create({
     color: '#FFF',
     letterSpacing: 4,
   },
-  userBadge: {
-    flexDirection: 'row',
+  profileButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 212, 170, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 6,
-    maxWidth: 100,
-  },
-  userName: {
-    fontSize: 12,
-    color: '#00D4AA',
-    fontWeight: '600',
+    borderRadius: 20,
   },
   mapContainer: {
     flex: 1,
@@ -583,7 +576,7 @@ const styles = StyleSheet.create({
   locationInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   locationTextContainer: {
     marginLeft: 12,
@@ -597,6 +590,58 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFF',
     fontWeight: '500',
+  },
+  // Vehicle selector styles
+  vehicleSelector: {
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  selectedVehicle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+  },
+  vehicleThumb: {
+    width: 50,
+    height: 35,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  vehicleThumbPlaceholder: {
+    width: 50,
+    height: 35,
+    borderRadius: 6,
+    backgroundColor: '#3A3A3A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  vehicleInfo: {
+    flex: 1,
+  },
+  vehicleReg: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  vehicleDetails: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
+  addVehiclePrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 8,
+  },
+  addVehicleText: {
+    color: '#00D4AA',
+    fontSize: 15,
+    fontWeight: '600',
   },
   priceContainer: {
     alignItems: 'center',
@@ -620,6 +665,9 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 16,
     gap: 12,
+  },
+  requestButtonDisabled: {
+    opacity: 0.5,
   },
   requestButtonText: {
     fontSize: 18,
@@ -674,5 +722,87 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FF3B30',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#1A1A1A',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  vehicleList: {
+    maxHeight: 300,
+  },
+  vehicleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  vehicleOptionSelected: {
+    borderWidth: 2,
+    borderColor: '#00D4AA',
+  },
+  vehicleOptionPhoto: {
+    width: 60,
+    height: 45,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  vehicleOptionPhotoPlaceholder: {
+    width: 60,
+    height: 45,
+    borderRadius: 8,
+    backgroundColor: '#3A3A3A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  vehicleOptionInfo: {
+    flex: 1,
+  },
+  vehicleOptionReg: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  vehicleOptionDetails: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 2,
+  },
+  addVehicleModalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#2A2A2A',
+    marginTop: 10,
+    gap: 8,
+  },
+  addVehicleModalText: {
+    color: '#00D4AA',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
