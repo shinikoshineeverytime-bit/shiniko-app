@@ -177,6 +177,17 @@ export default function AddVehicleScreen() {
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        {/* Hidden file input for web */}
+        {Platform.OS === 'web' && (
+          <input
+            ref={fileInputRef as any}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleWebFileSelect}
+          />
+        )}
+        
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -188,14 +199,14 @@ export default function AddVehicleScreen() {
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Photo Section */}
-          <TouchableOpacity style={styles.photoSection} onPress={showPhotoOptions}>
+          <TouchableOpacity style={styles.photoSection} onPress={showPhotoOptions} activeOpacity={0.7}>
             {photo ? (
               <Image source={{ uri: photo }} style={styles.photoPreview} />
             ) : (
               <View style={styles.photoPlaceholder}>
                 <Ionicons name="camera" size={40} color="#666" />
-                <Text style={styles.photoPlaceholderText}>Add a photo of your car</Text>
-                <Text style={styles.photoHint}>Helps the washer find your car</Text>
+                <Text style={styles.photoPlaceholderText}>Tap to add a photo of your car</Text>
+                <Text style={styles.photoHint}>Helps the washer find your car (optional)</Text>
               </View>
             )}
             {photo && (
@@ -263,7 +274,7 @@ export default function AddVehicleScreen() {
             style={[styles.input, styles.textArea]}
             value={notes}
             onChangeText={setNotes}
-            placeholder="Any details to help find your car...\ne.g., Parked in bay 5, has roof rack"
+            placeholder="Any details to help find your car..."
             placeholderTextColor="#666"
             multiline
             numberOfLines={3}
@@ -274,6 +285,7 @@ export default function AddVehicleScreen() {
             style={[styles.saveButton, saving && styles.saveButtonDisabled]}
             onPress={handleSave}
             disabled={saving}
+            activeOpacity={0.8}
           >
             {saving ? (
               <ActivityIndicator color="#0A0A0A" />
@@ -285,7 +297,7 @@ export default function AddVehicleScreen() {
             )}
           </TouchableOpacity>
 
-          <View style={{ height: 40 }} />
+          <View style={{ height: 60 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
