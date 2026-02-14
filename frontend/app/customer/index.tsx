@@ -7,16 +7,14 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
-  Dimensions,
   Platform,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import axios from 'axios';
+import MapComponent from '../../components/MapComponent';
 
-const { width, height } = Dimensions.get('window');
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 interface LocationCoords {
@@ -31,7 +29,7 @@ export default function CustomerHomeScreen() {
   const [requesting, setRequesting] = useState(false);
   const [activeJob, setActiveJob] = useState<any>(null);
   const [userId] = useState(() => `customer_${Date.now()}`);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
 
   useEffect(() => {
     getLocation();
@@ -53,6 +51,9 @@ export default function CustomerHomeScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Location permission is required to use this app');
+        // Set a default location for demo
+        setLocation({ latitude: 40.7128, longitude: -74.0060 });
+        setAddress('New York, NY (Demo)');
         setLoading(false);
         return;
       }
@@ -68,14 +69,20 @@ export default function CustomerHomeScreen() {
       setLocation(coords);
 
       // Get address
-      const [addressResult] = await Location.reverseGeocodeAsync(coords);
-      if (addressResult) {
-        const addr = `${addressResult.street || ''} ${addressResult.city || ''}`;
-        setAddress(addr.trim() || 'Current Location');
+      try {
+        const [addressResult] = await Location.reverseGeocodeAsync(coords);
+        if (addressResult) {
+          const addr = `${addressResult.street || ''} ${addressResult.city || ''}`;
+          setAddress(addr.trim() || 'Current Location');
+        }
+      } catch (e) {
+        setAddress('Current Location');
       }
     } catch (error) {
       console.error('Error getting location:', error);
-      Alert.alert('Error', 'Failed to get your location');
+      // Set default location on error
+      setLocation({ latitude: 40.7128, longitude: -74.0060 });
+      setAddress('New York, NY (Demo)');
     } finally {
       setLoading(false);
     }
@@ -188,44 +195,28 @@ export default function CustomerHomeScreen() {
 
       {/* Map */}
       <View style={styles.mapContainer}>
-        {location && (
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            provider={PROVIDER_DEFAULT}
-            initialRegion={{
-              ...location,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            showsUserLocation
-            showsMyLocationButton={false}
-          >
-            <Marker coordinate={location}>
-              <View style={styles.markerContainer}>
-                <View style={styles.marker}>
-                  <Ionicons name="car" size={24} color="#FFF" />
-                </View>
-              </View>
-            </Marker>
-          </MapView>
-        )}
+        <MapComponent 
+          location={location} 
+          onMapRef={(ref) => { mapRef.current = ref; }}
+        />
 
         {/* Recenter button */}
-        <TouchableOpacity
-          style={styles.recenterButton}
-          onPress={() => {
-            if (location && mapRef.current) {
-              mapRef.current.animateToRegion({
-                ...location,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              });
-            }
-          }}
-        >
-          <Ionicons name="locate" size={24} color="#00D4AA" />
-        </TouchableOpacity>
+        {Platform.OS !== 'web' && (
+          <TouchableOpacity
+            style={styles.recenterButton}
+            onPress={() => {
+              if (location && mapRef.current) {
+                mapRef.current.animateToRegion({
+                  ...location,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                });
+              }
+            }}
+          >
+            <Ionicons name="locate" size={24} color="#00D4AA" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Bottom Panel */}
@@ -335,25 +326,6 @@ const styles = StyleSheet.create({
   mapContainer: {
     flex: 1,
     overflow: 'hidden',
-  },
-  map: {
-    flex: 1,
-  },
-  markerContainer: {
-    alignItems: 'center',
-  },
-  marker: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#00D4AA',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#00D4AA',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   recenterButton: {
     position: 'absolute',
