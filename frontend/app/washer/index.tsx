@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,16 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
+  Dimensions,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import axios from 'axios';
+import MapView, { MapViewHandle } from '../../components/MapView';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const { height } = Dimensions.get('window');
 
 interface Job {
   id: string;
@@ -42,6 +45,8 @@ export default function WasherHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [washerId] = useState(() => `washer_${Date.now()}`);
   const [washerLocation, setWasherLocation] = useState<{latitude: number; longitude: number} | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const mapRef = useRef<MapViewHandle>(null);
 
   useEffect(() => {
     getLocation();
@@ -61,6 +66,8 @@ export default function WasherHomeScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Location permission is needed to see nearby jobs');
+        // Set demo location
+        setWasherLocation({ latitude: 40.7128, longitude: -74.0060 });
         return;
       }
       const loc = await Location.getCurrentPositionAsync({});
@@ -70,6 +77,7 @@ export default function WasherHomeScreen() {
       });
     } catch (error) {
       console.error('Error getting location:', error);
+      setWasherLocation({ latitude: 40.7128, longitude: -74.0060 });
     }
   };
 
@@ -165,6 +173,31 @@ export default function WasherHomeScreen() {
     return `${Math.floor(diff / 60)}h ago`;
   };
 
+  const getJobMarkers = () => {
+    const jobs = activeTab === 'available' ? availableJobs : myJobs;
+    return jobs.map(job => ({
+      id: job.id,
+      latitude: job.location.latitude,
+      longitude: job.location.longitude,
+      title: job.location.address || 'Job Location',
+      type: 'customer' as const,
+    }));
+  };
+
+  const viewJobOnMap = (job: Job) => {
+    setShowMap(true);
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.animateToRegion({
+          latitude: job.location.latitude,
+          longitude: job.location.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+      }
+    }, 500);
+  };
+
   const renderAvailableJob = ({ item }: { item: Job }) => (
     <View style={styles.jobCard}>
       <View style={styles.jobHeader}>
@@ -175,12 +208,13 @@ export default function WasherHomeScreen() {
         <Text style={styles.jobTime}>{formatTime(item.created_at)}</Text>
       </View>
 
-      <View style={styles.jobLocation}>
+      <TouchableOpacity style={styles.jobLocation} onPress={() => viewJobOnMap(item)}>
         <Ionicons name="location" size={20} color="#888" />
         <Text style={styles.jobAddress} numberOfLines={2}>
           {item.location.address || 'Location available'}
         </Text>
-      </View>
+        <Ionicons name="map-outline" size={18} color="#00D4AA" />
+      </TouchableOpacity>
 
       <View style={styles.jobFooter}>
         <View style={styles.jobInfo}>
@@ -234,12 +268,13 @@ export default function WasherHomeScreen() {
           </View>
         </View>
 
-        <View style={styles.jobLocation}>
+        <TouchableOpacity style={styles.jobLocation} onPress={() => viewJobOnMap(item)}>
           <Ionicons name="location" size={20} color="#888" />
           <Text style={styles.jobAddress} numberOfLines={2}>
             {item.location.address || 'Location available'}
           </Text>
-        </View>
+          <Ionicons name="map-outline" size={18} color="#00D4AA" />
+        </TouchableOpacity>
 
         <View style={styles.jobFooter}>
           <View style={styles.jobInfo}>
@@ -306,11 +341,17 @@ export default function WasherHomeScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => showMap ? setShowMap(false) : router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SHINIKO</Text>
         <View style={styles.headerRight}>
+          <TouchableOpacity 
+            style={styles.mapToggle} 
+            onPress={() => setShowMap(!showMap)}
+          >
+            <Ionicons name={showMap ? 'list' : 'map'} size={20} color="#00D4AA" />
+          </TouchableOpacity>
           <View style={styles.onlineBadge}>
             <View style={styles.onlineDot} />
             <Text style={styles.onlineText}>Online</Text>
@@ -338,22 +379,36 @@ export default function WasherHomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Job List */}
-      <FlatList
-        data={activeTab === 'available' ? availableJobs : myJobs}
-        renderItem={activeTab === 'available' ? renderAvailableJob : renderMyJob}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={renderEmptyList}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#00D4AA"
-            colors={['#00D4AA']}
+      {/* Map View */}
+      {showMap && washerLocation && (
+        <View style={styles.mapContainer}>
+          <MapView
+            ref={mapRef}
+            location={washerLocation}
+            style={styles.map}
+            markers={getJobMarkers()}
           />
-        }
-      />
+        </View>
+      )}
+
+      {/* Job List */}
+      {!showMap && (
+        <FlatList
+          data={activeTab === 'available' ? availableJobs : myJobs}
+          renderItem={activeTab === 'available' ? renderAvailableJob : renderMyJob}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={renderEmptyList}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#00D4AA"
+              colors={['#00D4AA']}
+            />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -393,8 +448,17 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
   },
   headerRight: {
-    width: 80,
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mapToggle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 212, 170, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   onlineBadge: {
     flexDirection: 'row',
@@ -438,6 +502,16 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: '#00D4AA',
+  },
+  mapContainer: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
   },
   listContent: {
     paddingHorizontal: 16,

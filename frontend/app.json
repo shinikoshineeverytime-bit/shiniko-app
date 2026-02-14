@@ -12,6 +12,9 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Find car washers near you"
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyC8rhnTkdB7ocVc8XEcSx_5Z4XiB46TgUY"
       }
     },
     "android": {
@@ -22,7 +25,12 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyC8rhnTkdB7ocVc8XEcSx_5Z4XiB46TgUY"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
