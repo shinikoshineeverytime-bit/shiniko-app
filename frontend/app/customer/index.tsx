@@ -12,6 +12,7 @@ import {
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import axios from 'axios';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
@@ -27,7 +28,6 @@ export default function CustomerHomeScreen() {
   const [requesting, setRequesting] = useState(false);
   const [activeJob, setActiveJob] = useState<any>(null);
   const [userId] = useState(() => `customer_${Date.now()}`);
-  const mapRef = useRef<any>(null);
 
   useEffect(() => {
     getLocation();
@@ -191,30 +191,23 @@ export default function CustomerHomeScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Map */}
+      {/* Map Area - Simplified for web compatibility */}
       <View style={styles.mapContainer}>
-        <MapComponent 
-          location={location} 
-          onMapRef={(ref) => { mapRef.current = ref; }}
-        />
-
-        {/* Recenter button */}
-        {Platform.OS !== 'web' && (
-          <TouchableOpacity
-            style={styles.recenterButton}
-            onPress={() => {
-              if (location && mapRef.current) {
-                mapRef.current.animateToRegion({
-                  ...location,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                });
-              }
-            }}
-          >
-            <Ionicons name="locate" size={24} color="#00D4AA" />
-          </TouchableOpacity>
-        )}
+        <View style={styles.mapPlaceholder}>
+          <View style={styles.mapIconBg}>
+            <Ionicons name="location" size={48} color="#00D4AA" />
+          </View>
+          <Text style={styles.mapTitle}>Your Location</Text>
+          {location && (
+            <Text style={styles.mapCoords}>
+              {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+            </Text>
+          )}
+          <View style={styles.pulseContainer}>
+            <View style={styles.pulseOuter} />
+            <View style={styles.pulse} />
+          </View>
+        </View>
       </View>
 
       {/* Bottom Panel */}
@@ -325,21 +318,51 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
-  recenterButton: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  mapPlaceholder: {
+    flex: 1,
     backgroundColor: '#1A1A1A',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+  },
+  mapIconBg: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(0, 212, 170, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFF',
+    marginTop: 24,
+  },
+  mapCoords: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 8,
+    fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
+  },
+  pulseContainer: {
+    marginTop: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 40,
+  },
+  pulse: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#00D4AA',
+  },
+  pulseOuter: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 212, 170, 0.3)',
   },
   bottomPanel: {
     backgroundColor: '#1A1A1A',
