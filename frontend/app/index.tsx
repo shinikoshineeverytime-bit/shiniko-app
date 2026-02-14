@@ -138,13 +138,13 @@ export default function WelcomeScreen() {
                 activeOpacity={0.8}
               >
                 <View style={[styles.roleIconContainer, { backgroundColor: 'rgba(255, 184, 0, 0.15)' }]}>
-                  <Ionicons name="navigate" size={40} color="#FFB800" />
+                  <Icon name="navigate" size={40} color="#FFB800" />
                 </View>
                 <View style={styles.roleTextContainer}>
                   <Text style={styles.roleTitle}>Drive to a Car Wash</Text>
                   <Text style={styles.roleDescription}>Find car wash locations near you</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={24} color="#666" />
+                <Icon name="chevron-forward" size={24} color="#666" />
               </TouchableOpacity>
             </>
           ) : (
