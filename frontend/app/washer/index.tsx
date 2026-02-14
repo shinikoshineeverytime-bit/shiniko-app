@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 import axios from 'axios';
 import MapView, { MapViewHandle } from '../../components/MapView';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../hooks/useNotifications';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
@@ -38,6 +39,7 @@ interface Job {
 
 export default function WasherHomeScreen() {
   const { user, logout } = useAuth();
+  const { notification } = useNotifications(user?.id || null);
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [activeTab, setActiveTab] = useState<'available' | 'my_jobs'>('available');
@@ -55,6 +57,19 @@ export default function WasherHomeScreen() {
     getLocation();
     fetchJobs();
   }, [user]);
+
+  // Refresh when notification received (new job available)
+  useEffect(() => {
+    if (notification) {
+      fetchJobs();
+      // Show alert for new jobs
+      const data = notification.request.content.data;
+      if (data?.type === 'new_job') {
+        // Auto-switch to available tab
+        setActiveTab('available');
+      }
+    }
+  }, [notification]);
 
   // Auto-refresh every 10 seconds
   useEffect(() => {
@@ -112,7 +127,7 @@ export default function WasherHomeScreen() {
         washer_id: user.id,
         washer_name: user.name,
       });
-      Alert.alert('Success', 'Job accepted! Navigate to the customer.');
+      Alert.alert('Job Accepted!', 'The customer has been notified. Navigate to their location.');
       fetchJobs();
       setActiveTab('my_jobs');
     } catch (error: any) {
@@ -123,7 +138,7 @@ export default function WasherHomeScreen() {
   const startJob = async (jobId: string) => {
     try {
       await axios.put(`${API_URL}/api/jobs/${jobId}/start`);
-      Alert.alert('Started', 'Wash is now in progress.');
+      Alert.alert('Wash Started!', 'The customer has been notified that you\'ve started.');
       fetchJobs();
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.detail || 'Failed to start job');
@@ -141,7 +156,7 @@ export default function WasherHomeScreen() {
           onPress: async () => {
             try {
               await axios.put(`${API_URL}/api/jobs/${jobId}/complete`);
-              Alert.alert('Completed!', 'Great job! The wash has been completed.');
+              Alert.alert('Great Work!', 'The customer has been notified. Job completed!');
               fetchJobs();
             } catch (error: any) {
               Alert.alert('Error', error.response?.data?.detail || 'Failed to complete job');
@@ -352,7 +367,7 @@ export default function WasherHomeScreen() {
       </Text>
       <Text style={styles.emptySubtitle}>
         {activeTab === 'available' 
-          ? 'Pull down to refresh or check back soon' 
+          ? 'You\'ll get notified when new jobs come in' 
           : 'Accept a job to get started'}
       </Text>
     </View>

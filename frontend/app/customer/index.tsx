@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import axios from 'axios';
 import MapView, { MapViewHandle } from '../../components/MapView';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../hooks/useNotifications';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
@@ -25,6 +26,7 @@ interface LocationCoords {
 
 export default function CustomerHomeScreen() {
   const { user, logout } = useAuth();
+  const { notification } = useNotifications(user?.id || null);
   const [location, setLocation] = useState<LocationCoords | null>(null);
   const [address, setAddress] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -40,6 +42,13 @@ export default function CustomerHomeScreen() {
     getLocation();
     checkActiveJob();
   }, [user]);
+
+  // Refresh when notification received
+  useEffect(() => {
+    if (notification) {
+      checkActiveJob();
+    }
+  }, [notification]);
 
   // Poll for job updates
   useEffect(() => {
@@ -122,7 +131,7 @@ export default function CustomerHomeScreen() {
         },
       });
       setActiveJob(response.data);
-      Alert.alert('Success', 'Wash request sent! A washer will accept soon.');
+      Alert.alert('Request Sent!', 'Nearby washers have been notified. You\'ll get a notification when someone accepts.');
     } catch (error) {
       console.error('Error requesting wash:', error);
       Alert.alert('Error', 'Failed to request wash. Please try again.');
