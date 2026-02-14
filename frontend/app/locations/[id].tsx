@@ -11,7 +11,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/Icon';
 import { router, useLocalSearchParams } from 'expo-router';
 import axios from 'axios';
 
@@ -122,7 +122,7 @@ export default function LocationDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Icon name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{location.name}</Text>
         <View style={{ width: 40 }} />
@@ -135,7 +135,7 @@ export default function LocationDetailScreen() {
           
           {location.rating > 0 && (
             <View style={styles.ratingRow}>
-              <Ionicons name="star" size={20} color="#FFB800" />
+              <Icon name="star" size={20} color="#FFB800" />
               <Text style={styles.ratingText}>{location.rating.toFixed(1)}</Text>
               <Text style={styles.reviewCount}>({location.review_count} reviews)</Text>
             </View>
@@ -147,9 +147,9 @@ export default function LocationDetailScreen() {
 
           {/* Address */}
           <TouchableOpacity style={styles.addressRow} onPress={openDirections}>
-            <Ionicons name="location" size={20} color="#00D4AA" />
+            <Icon name="location" size={20} color="#00D4AA" />
             <Text style={styles.addressText}>{location.location.address || 'View on map'}</Text>
-            <Ionicons name="chevron-forward" size={18} color="#666" />
+            <Icon name="chevron-forward" size={18} color="#666" />
           </TouchableOpacity>
         </View>
 
@@ -157,7 +157,7 @@ export default function LocationDetailScreen() {
         <View style={styles.actionsRow}>
           <TouchableOpacity style={styles.actionButton} onPress={openDirections}>
             <View style={styles.actionIcon}>
-              <Ionicons name="navigate" size={24} color="#00D4AA" />
+              <Icon name="navigate" size={24} color="#00D4AA" />
             </View>
             <Text style={styles.actionText}>Directions</Text>
           </TouchableOpacity>
@@ -165,7 +165,7 @@ export default function LocationDetailScreen() {
           {location.phone && (
             <TouchableOpacity style={styles.actionButton} onPress={callLocation}>
               <View style={styles.actionIcon}>
-                <Ionicons name="call" size={24} color="#00D4AA" />
+                <Icon name="call" size={24} color="#00D4AA" />
               </View>
               <Text style={styles.actionText}>Call</Text>
             </TouchableOpacity>
@@ -174,7 +174,7 @@ export default function LocationDetailScreen() {
           {location.website && (
             <TouchableOpacity style={styles.actionButton} onPress={openWebsite}>
               <View style={styles.actionIcon}>
-                <Ionicons name="globe" size={24} color="#00D4AA" />
+                <Icon name="globe" size={24} color="#00D4AA" />
               </View>
               <Text style={styles.actionText}>Website</Text>
             </TouchableOpacity>
@@ -183,7 +183,7 @@ export default function LocationDetailScreen() {
           {location.email && (
             <TouchableOpacity style={styles.actionButton} onPress={sendEmail}>
               <View style={styles.actionIcon}>
-                <Ionicons name="mail" size={24} color="#00D4AA" />
+                <Icon name="mail" size={24} color="#00D4AA" />
               </View>
               <Text style={styles.actionText}>Email</Text>
             </TouchableOpacity>
@@ -215,7 +215,7 @@ export default function LocationDetailScreen() {
             <View style={styles.amenitiesGrid}>
               {location.amenities.map((amenity, index) => (
                 <View key={index} style={styles.amenityBadge}>
-                  <Ionicons name="checkmark-circle" size={16} color="#00D4AA" />
+                  <Icon name="checkmark-circle" size={16} color="#00D4AA" />
                   <Text style={styles.amenityText}>{amenity}</Text>
                 </View>
               ))}
@@ -230,7 +230,7 @@ export default function LocationDetailScreen() {
             <View style={styles.paymentRow}>
               {location.payment_methods.map((method, index) => (
                 <View key={index} style={styles.paymentBadge}>
-                  <Ionicons 
+                  <Icon 
                     name={method.toLowerCase().includes('card') ? 'card' : 'cash'} 
                     size={16} 
                     color="#888" 
@@ -247,19 +247,19 @@ export default function LocationDetailScreen() {
           <Text style={styles.sectionTitle}>Contact Information</Text>
           {location.phone && (
             <TouchableOpacity style={styles.contactRow} onPress={callLocation}>
-              <Ionicons name="call-outline" size={20} color="#888" />
+              <Icon name="call-outline" size={20} color="#888" />
               <Text style={styles.contactText}>{location.phone}</Text>
             </TouchableOpacity>
           )}
           {location.email && (
             <TouchableOpacity style={styles.contactRow} onPress={sendEmail}>
-              <Ionicons name="mail-outline" size={20} color="#888" />
+              <Icon name="mail-outline" size={20} color="#888" />
               <Text style={styles.contactText}>{location.email}</Text>
             </TouchableOpacity>
           )}
           {location.website && (
             <TouchableOpacity style={styles.contactRow} onPress={openWebsite}>
-              <Ionicons name="globe-outline" size={20} color="#888" />
+              <Icon name="globe-outline" size={20} color="#888" />
               <Text style={styles.contactText}>{location.website}</Text>
             </TouchableOpacity>
           )}
@@ -271,7 +271,7 @@ export default function LocationDetailScreen() {
       {/* Bottom CTA */}
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.directionsButtonLarge} onPress={openDirections}>
-          <Ionicons name="navigate" size={24} color="#0A0A0A" />
+          <Icon name="navigate" size={24} color="#0A0A0A" />
           <Text style={styles.directionsButtonText}>Get Directions</Text>
         </TouchableOpacity>
       </View>
