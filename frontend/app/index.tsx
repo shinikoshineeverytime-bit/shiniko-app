@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -86,7 +87,7 @@ export default function WelcomeScreen() {
           <Text style={styles.tagline}>Shine — Every Time</Text>
         </View>
 
-        <View style={styles.content}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {!showNameInput ? (
             // Role Selection
             <>
@@ -119,6 +120,29 @@ export default function WelcomeScreen() {
                 <View style={styles.roleTextContainer}>
                   <Text style={styles.roleTitle}>I'm a car washer</Text>
                   <Text style={styles.roleDescription}>Accept jobs and wash cars nearby</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#666" />
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Drive to Car Wash Option */}
+              <TouchableOpacity 
+                style={[styles.roleCard, styles.driveCard]}
+                onPress={() => router.push('/locations')}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.roleIconContainer, { backgroundColor: 'rgba(255, 184, 0, 0.15)' }]}>
+                  <Ionicons name="navigate" size={40} color="#FFB800" />
+                </View>
+                <View style={styles.roleTextContainer}>
+                  <Text style={styles.roleTitle}>Drive to a Car Wash</Text>
+                  <Text style={styles.roleDescription}>Find car wash locations near you</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={24} color="#666" />
               </TouchableOpacity>
@@ -183,7 +207,7 @@ export default function WelcomeScreen() {
               </View>
             </>
           )}
-        </View>
+        </ScrollView>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>On-demand exterior car wash</Text>
@@ -208,7 +232,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 50,
     paddingBottom: 20,
   },
   brandName: {
@@ -226,7 +250,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
   },
   title: {
     fontSize: 32,
@@ -237,7 +260,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#888',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   roleCard: {
     flexDirection: 'row',
@@ -248,6 +271,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#2A2A2A',
+  },
+  driveCard: {
+    borderColor: '#FFB80030',
   },
   roleIconContainer: {
     width: 70,
@@ -270,6 +296,21 @@ const styles = StyleSheet.create({
   roleDescription: {
     fontSize: 14,
     color: '#888',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#2A2A2A',
+  },
+  dividerText: {
+    color: '#666',
+    paddingHorizontal: 16,
+    fontSize: 12,
   },
   backButton: {
     width: 40,
@@ -336,7 +377,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    paddingBottom: 40,
+    paddingBottom: 30,
   },
   footerText: {
     fontSize: 12,
