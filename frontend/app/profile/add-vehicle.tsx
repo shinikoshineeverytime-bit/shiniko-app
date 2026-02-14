@@ -127,16 +127,28 @@ export default function AddVehicleScreen() {
     console.log('handleSave called');
     
     if (!registration.trim()) {
-      Alert.alert('Required', 'Please enter your car registration');
+      if (Platform.OS === 'web') {
+        window.alert('Please enter your car registration');
+      } else {
+        Alert.alert('Required', 'Please enter your car registration');
+      }
       return;
     }
     if (!colour.trim()) {
-      Alert.alert('Required', 'Please enter your car colour');
+      if (Platform.OS === 'web') {
+        window.alert('Please enter your car colour');
+      } else {
+        Alert.alert('Required', 'Please enter your car colour');
+      }
       return;
     }
     if (!user) {
       console.log('No user found');
-      Alert.alert('Error', 'Please log in first');
+      if (Platform.OS === 'web') {
+        window.alert('Please log in first');
+      } else {
+        Alert.alert('Error', 'Please log in first');
+      }
       return;
     }
 
@@ -159,13 +171,22 @@ export default function AddVehicleScreen() {
       const response = await axios.post(`${API_URL}/api/users/${user.id}/vehicles`, vehicleData);
       console.log('Vehicle saved:', response.data);
       
-      Alert.alert('Success!', 'Vehicle added to your account', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      if (Platform.OS === 'web') {
+        window.alert('Vehicle added to your account!');
+        router.back();
+      } else {
+        Alert.alert('Success!', 'Vehicle added to your account', [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
+      }
     } catch (error: any) {
       console.error('Error adding vehicle:', error);
       console.error('Error response:', error.response?.data);
-      Alert.alert('Error', 'Failed to add vehicle. Please try again.');
+      if (Platform.OS === 'web') {
+        window.alert('Failed to add vehicle. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to add vehicle. Please try again.');
+      }
     } finally {
       setSaving(false);
     }
