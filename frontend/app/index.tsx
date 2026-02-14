@@ -100,13 +100,13 @@ export default function WelcomeScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.roleIconContainer}>
-                  <Ionicons name="car-sport" size={40} color="#00D4AA" />
+                  <Icon name="car-sport" size={40} color="#00D4AA" />
                 </View>
                 <View style={styles.roleTextContainer}>
                   <Text style={styles.roleTitle}>I need a car wash</Text>
                   <Text style={styles.roleDescription}>Request an exterior wash at your location</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={24} color="#666" />
+                <Icon name="chevron-forward" size={24} color="#666" />
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -115,13 +115,13 @@ export default function WelcomeScreen() {
                 activeOpacity={0.8}
               >
                 <View style={[styles.roleIconContainer, { backgroundColor: 'rgba(0, 122, 255, 0.15)' }]}>
-                  <Ionicons name="water" size={40} color="#007AFF" />
+                  <Icon name="water" size={40} color="#007AFF" />
                 </View>
                 <View style={styles.roleTextContainer}>
                   <Text style={styles.roleTitle}>I'm a car washer</Text>
                   <Text style={styles.roleDescription}>Accept jobs and wash cars nearby</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={24} color="#666" />
+                <Icon name="chevron-forward" size={24} color="#666" />
               </TouchableOpacity>
 
               {/* Divider */}
