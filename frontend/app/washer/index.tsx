@@ -308,6 +308,16 @@ export default function WasherHomeScreen() {
               {getStatusText()}
             </Text>
           </View>
+          {/* Chat button */}
+          <TouchableOpacity
+            style={styles.chatIconButton}
+            onPress={() => router.push({ 
+              pathname: '/chat/[jobId]', 
+              params: { jobId: item.id, otherName: item.customer_name } 
+            })}
+          >
+            <Ionicons name="chatbubble" size={18} color="#007AFF" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.customerInfo}>
