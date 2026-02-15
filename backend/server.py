@@ -783,6 +783,182 @@ async def get_quick_actions(role: str = "customer"):
 
 # ==================== END CHAT / MESSAGING ====================
 
+# ==================== PAYMENTS (STRIPE) ====================
+
+class PaymentStatus(str, Enum):
+    pending = "pending"
+    succeeded = "succeeded"
+    failed = "failed"
+    refunded = "refunded"
+
+class Payment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    stripe_payment_intent_id: str
+    job_id: Optional[str] = None
+    customer_id: str
+    washer_id: Optional[str] = None
+    amount_cents: int  # Total amount in cents
+    platform_fee_cents: int  # 5% platform fee
+    washer_payout_cents: int  # 95% for washer
+    currency: str = "usd"
+    status: PaymentStatus = PaymentStatus.pending
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class CreatePaymentIntentRequest(BaseModel):
+    customer_id: str
+    washer_id: Optional[str] = None
+    job_id: Optional[str] = None
+
+class PaymentIntentResponse(BaseModel):
+    client_secret: str
+    payment_intent_id: str
+    amount_cents: int
+    platform_fee_cents: int
+    washer_payout_cents: int
+    publishable_key: str
+
+@api_router.post("/payments/create-intent", response_model=PaymentIntentResponse)
+async def create_payment_intent(request: CreatePaymentIntentRequest):
+    """
+    Create a Stripe PaymentIntent for a car wash service.
+    Price: $25.00 (2500 cents)
+    Platform fee: 5% ($1.25)
+    Washer gets: 95% ($23.75)
+    """
+    try:
+        # Calculate fee split
+        amount_cents = SERVICE_PRICE_CENTS
+        platform_fee_cents = int(amount_cents * PLATFORM_FEE_PERCENT / 100)
+        washer_payout_cents = amount_cents - platform_fee_cents
+        
+        # Create PaymentIntent with Stripe
+        payment_intent = stripe.PaymentIntent.create(
+            amount=amount_cents,
+            currency="usd",
+            payment_method_types=["card"],
+            metadata={
+                "customer_id": request.customer_id,
+                "washer_id": request.washer_id or "",
+                "job_id": request.job_id or "",
+                "platform_fee_cents": str(platform_fee_cents),
+                "washer_payout_cents": str(washer_payout_cents),
+            },
+        )
+        
+        # Store payment record in MongoDB
+        payment_doc = {
+            "id": str(uuid.uuid4()),
+            "stripe_payment_intent_id": payment_intent.id,
+            "job_id": request.job_id,
+            "customer_id": request.customer_id,
+            "washer_id": request.washer_id,
+            "amount_cents": amount_cents,
+            "platform_fee_cents": platform_fee_cents,
+            "washer_payout_cents": washer_payout_cents,
+            "currency": "usd",
+            "status": "pending",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        }
+        
+        await db.payments.insert_one(payment_doc)
+        
+        return PaymentIntentResponse(
+            client_secret=payment_intent.client_secret,
+            payment_intent_id=payment_intent.id,
+            amount_cents=amount_cents,
+            platform_fee_cents=platform_fee_cents,
+            washer_payout_cents=washer_payout_cents,
+            publishable_key=STRIPE_PUBLISHABLE_KEY,
+        )
+    
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating payment intent: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create payment intent")
+
+@api_router.post("/payments/confirm/{payment_intent_id}")
+async def confirm_payment(payment_intent_id: str):
+    """
+    Confirm payment status after completion.
+    Called by frontend after successful PaymentSheet completion.
+    """
+    try:
+        # Retrieve the payment intent from Stripe
+        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        
+        # Update payment record in MongoDB
+        await db.payments.update_one(
+            {"stripe_payment_intent_id": payment_intent_id},
+            {
+                "$set": {
+                    "status": payment_intent.status,
+                    "updated_at": datetime.utcnow(),
+                }
+            }
+        )
+        
+        # Get the payment record
+        payment = await db.payments.find_one({"stripe_payment_intent_id": payment_intent_id})
+        
+        if payment_intent.status == "succeeded":
+            # If there's a job associated, update its payment status
+            if payment and payment.get("job_id"):
+                await db.wash_jobs.update_one(
+                    {"id": payment["job_id"]},
+                    {"$set": {"payment_status": "paid", "updated_at": datetime.utcnow()}}
+                )
+            
+            return {
+                "status": "succeeded",
+                "message": "Payment successful!",
+                "amount_cents": payment["amount_cents"] if payment else SERVICE_PRICE_CENTS,
+            }
+        else:
+            return {
+                "status": payment_intent.status,
+                "message": f"Payment status: {payment_intent.status}",
+            }
+    
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error confirming payment: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error confirming payment: {e}")
+        raise HTTPException(status_code=500, detail="Failed to confirm payment")
+
+@api_router.get("/payments/status/{payment_intent_id}")
+async def get_payment_status(payment_intent_id: str):
+    """Get the current status of a payment"""
+    try:
+        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        
+        payment = await db.payments.find_one({"stripe_payment_intent_id": payment_intent_id})
+        
+        return {
+            "status": payment_intent.status,
+            "amount_cents": payment_intent.amount,
+            "currency": payment_intent.currency,
+            "platform_fee_cents": payment["platform_fee_cents"] if payment else 0,
+            "washer_payout_cents": payment["washer_payout_cents"] if payment else 0,
+        }
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/payments/config")
+async def get_payment_config():
+    """Get Stripe publishable key and pricing info"""
+    return {
+        "publishable_key": STRIPE_PUBLISHABLE_KEY,
+        "service_price_cents": SERVICE_PRICE_CENTS,
+        "platform_fee_percent": PLATFORM_FEE_PERCENT,
+    }
+
+# ==================== END PAYMENTS ====================
+
 @api_router.get("/")
 async def root():
     return {"message": "Shiniko Car Wash API", "version": "1.0.0"}
