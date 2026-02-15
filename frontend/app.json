@@ -51,7 +51,8 @@
           "icon": "./assets/images/icon.png",
           "color": "#00D4AA"
         }
-      ]
+      ],
+      "@stripe/stripe-react-native"
     ],
     "experiments": {
       "typedRoutes": true
