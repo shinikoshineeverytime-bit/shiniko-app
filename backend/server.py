@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 import httpx
+import stripe
 
 
 ROOT_DIR = Path(__file__).parent
@@ -20,6 +21,14 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# Stripe configuration
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+
+# Platform fee percentage (5%)
+PLATFORM_FEE_PERCENT = 5
+SERVICE_PRICE_CENTS = 2500  # $25.00
 
 # Create the main app without a prefix
 app = FastAPI()
