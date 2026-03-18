@@ -15,7 +15,6 @@ import { useAuth } from '../context/AuthContext';
 export default function WelcomeScreen() {
   const { user, isLoading, login } = useAuth();
 
-  // If user is already logged in, redirect to their dashboard
   useEffect(() => {
     if (!isLoading && user) {
       router.replace(`/${user.role}`);
@@ -24,7 +23,6 @@ export default function WelcomeScreen() {
 
   const handleSelect = async (role: 'customer' | 'washer') => {
     try {
-      // Auto-generate a simple user
       await login('User', role);
       router.replace(`/${role}`);
     } catch (error) {
@@ -46,38 +44,55 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.brandName}>SHINIKO</Text>
-        <Text style={styles.tagline}>Exterior Car Wash • £25</Text>
-      </View>
-
-      {/* Options */}
       <View style={styles.content}>
-        <TouchableOpacity 
-          style={styles.optionCard}
-          onPress={() => handleSelect('customer')}
-          activeOpacity={0.8}
-        >
-          <Icon name="car-sport" size={48} color="#00D4AA" />
-          <Text style={styles.optionTitle}>Get a wash</Text>
-          <Text style={styles.optionDesc}>Book a washer to come to you</Text>
-        </TouchableOpacity>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.brandName}>SHINIKO</Text>
+          <View style={styles.taglineContainer}>
+            <Text style={styles.tagline}>Exterior Car Wash</Text>
+            <View style={styles.priceBadge}>
+              <Text style={styles.priceText}>£25</Text>
+            </View>
+          </View>
+        </View>
 
-        <TouchableOpacity 
-          style={[styles.optionCard, styles.optionCardAlt]}
-          onPress={() => handleSelect('washer')}
-          activeOpacity={0.8}
-        >
-          <Icon name="water" size={48} color="#007AFF" />
-          <Text style={styles.optionTitle}>Wash cars</Text>
-          <Text style={styles.optionDesc}>Earn money washing cars</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Options */}
+        <View style={styles.optionsContainer}>
+          <TouchableOpacity 
+            style={styles.optionCard}
+            onPress={() => handleSelect('customer')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.optionIconContainer}>
+              <Icon name="car-sport" size={36} color="#00D4AA" />
+            </View>
+            <View style={styles.optionTextContainer}>
+              <Text style={styles.optionTitle}>Get a wash</Text>
+              <Text style={styles.optionDesc}>Book a washer to come to you</Text>
+            </View>
+            <Icon name="chevron-forward" size={24} color="#444" />
+          </TouchableOpacity>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>On-demand mobile car wash</Text>
+          <TouchableOpacity 
+            style={styles.optionCard}
+            onPress={() => handleSelect('washer')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.optionIconContainer, styles.optionIconAlt]}>
+              <Icon name="water" size={36} color="#007AFF" />
+            </View>
+            <View style={styles.optionTextContainer}>
+              <Text style={styles.optionTitle}>Wash cars</Text>
+              <Text style={styles.optionDesc}>Earn money washing cars</Text>
+            </View>
+            <Icon name="chevron-forward" size={24} color="#444" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>On-demand mobile car wash</Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -93,56 +108,90 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
+  },
   header: {
     alignItems: 'center',
-    paddingTop: 80,
-    paddingBottom: 60,
+    paddingTop: 40,
+    paddingBottom: 50,
   },
   brandName: {
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: '800',
     color: '#FFF',
     letterSpacing: 8,
   },
-  tagline: {
-    fontSize: 15,
-    color: '#00D4AA',
-    marginTop: 12,
-    fontWeight: '600',
+  taglineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 12,
   },
-  content: {
+  tagline: {
+    fontSize: 16,
+    color: '#888',
+    fontWeight: '500',
+  },
+  priceBadge: {
+    backgroundColor: 'rgba(0, 212, 170, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  priceText: {
+    fontSize: 16,
+    color: '#00D4AA',
+    fontWeight: '700',
+  },
+  optionsContainer: {
     flex: 1,
-    paddingHorizontal: 24,
+    justifyContent: 'center',
     gap: 16,
   },
   optionCard: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 20,
-    padding: 32,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(0, 212, 170, 0.3)',
+    backgroundColor: '#151515',
+    borderRadius: 16,
+    padding: 20,
+    gap: 16,
+    minHeight: 88,
   },
-  optionCardAlt: {
-    borderColor: 'rgba(0, 122, 255, 0.3)',
+  optionIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 212, 170, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  optionIconAlt: {
+    backgroundColor: 'rgba(0, 122, 255, 0.12)',
+  },
+  optionTextContainer: {
+    flex: 1,
   },
   optionTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFF',
-    marginTop: 16,
   },
   optionDesc: {
     fontSize: 14,
-    color: '#888',
-    marginTop: 6,
+    color: '#666',
+    marginTop: 4,
   },
   footer: {
     alignItems: 'center',
-    paddingBottom: 40,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
   footerText: {
     fontSize: 13,
-    color: '#555',
+    color: '#444',
   },
 });
