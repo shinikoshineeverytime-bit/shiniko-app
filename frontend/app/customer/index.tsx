@@ -264,175 +264,175 @@ export default function CustomerScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-          {/* Location Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>YOUR LOCATION</Text>
-            <View style={styles.cardWrapper}>
-              <LinearGradient
-                colors={['#1a1a1a', '#141414']}
-                style={styles.card}
-              >
-                <View style={styles.locationIconContainer}>
-                  <LinearGradient
-                    colors={['rgba(0, 212, 170, 0.2)', 'rgba(0, 212, 170, 0.05)']}
-                    style={styles.iconGradient}
-                  >
-                    <Icon name="location" size={22} color="#00D4AA" />
-                  </LinearGradient>
-                </View>
-                <Text style={styles.locationText} numberOfLines={2}>{address}</Text>
-              </LinearGradient>
-            </View>
-          </View>
-
-          {activeJob ? (
-            // Active Job View
+            {/* Location Section */}
             <View style={styles.section}>
+              <Text style={styles.sectionLabel}>YOUR LOCATION</Text>
               <View style={styles.cardWrapper}>
                 <LinearGradient
                   colors={['#1a1a1a', '#141414']}
-                  style={styles.activeJobCard}
+                  style={styles.card}
                 >
-                  {/* Glow effect */}
-                  <View style={[styles.cardGlow, { backgroundColor: getStatusDisplay(activeJob.status).color + '10' }]} />
-                  
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(activeJob.status).color + '15' }]}>
-                    <Icon name={getStatusDisplay(activeJob.status).icon as any} size={18} color={getStatusDisplay(activeJob.status).color} />
-                    <Text style={[styles.statusText, { color: getStatusDisplay(activeJob.status).color }]}>
-                      {getStatusDisplay(activeJob.status).text}
-                    </Text>
-                  </View>
-
-                  <View style={styles.divider} />
-
-                  <View style={styles.jobInfoRow}>
-                    <View>
-                      <Text style={styles.jobCarReg}>{activeJob.vehicle?.registration}</Text>
-                      <Text style={styles.jobCarColour}>{activeJob.vehicle?.colour}</Text>
-                    </View>
-                    <Text style={styles.jobPrice}>£25</Text>
-                  </View>
-
-                  {activeJob.washer_name && (
-                    <>
-                      <View style={styles.divider} />
-                      <View style={styles.washerInfo}>
-                        <Icon name="person" size={16} color="#666" />
-                        <Text style={styles.washerName}>{activeJob.washer_name}</Text>
-                      </View>
-                    </>
-                  )}
-
-                  {(activeJob.status === 'accepted' || activeJob.status === 'in_progress') && (
-                    <TouchableOpacity 
-                      style={styles.chatButtonWrapper}
-                      onPress={() => router.push(`/chat/${activeJob.id}`)}
-                      activeOpacity={0.8}
+                  <View style={styles.locationIconContainer}>
+                    <LinearGradient
+                      colors={['rgba(0, 212, 170, 0.2)', 'rgba(0, 212, 170, 0.05)']}
+                      style={styles.iconGradient}
                     >
-                      <LinearGradient
-                        colors={['#007AFF', '#0066DD']}
-                        style={styles.chatButton}
-                      >
-                        <Icon name="chatbubble" size={20} color="#FFF" />
-                        <Text style={styles.chatButtonText}>Message Washer</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  )}
-
-                  {activeJob.status === 'requested' && (
-                    <TouchableOpacity style={styles.cancelButton} onPress={cancelJob} activeOpacity={0.7}>
-                      <Text style={styles.cancelButtonText}>Cancel Booking</Text>
-                    </TouchableOpacity>
-                  )}
+                      <Icon name="location" size={22} color="#00D4AA" />
+                    </LinearGradient>
+                  </View>
+                  <Text style={styles.locationText} numberOfLines={2}>{address}</Text>
                 </LinearGradient>
               </View>
             </View>
-          ) : (
-            // Booking Form
-            <>
-              {/* Car Details Section */}
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>YOUR CAR</Text>
-                
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Registration (e.g. AB12 CDE)"
-                    placeholderTextColor="#4a4a4a"
-                    value={carReg}
-                    onChangeText={setCarReg}
-                    autoCapitalize="characters"
-                  />
-                </View>
 
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Colour (e.g. Black, White, Silver)"
-                    placeholderTextColor="#4a4a4a"
-                    value={carColour}
-                    onChangeText={setCarColour}
-                    autoCapitalize="words"
-                  />
-                </View>
-              </View>
-
-              {/* Service Section */}
+            {activeJob ? (
+              // Active Job View
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>SERVICE</Text>
                 <View style={styles.cardWrapper}>
                   <LinearGradient
                     colors={['#1a1a1a', '#141414']}
-                    style={styles.serviceCard}
+                    style={styles.activeJobCard}
                   >
-                    <View style={styles.serviceIconContainer}>
-                      <LinearGradient
-                        colors={['rgba(0, 212, 170, 0.25)', 'rgba(0, 212, 170, 0.08)']}
-                        style={styles.serviceIconGradient}
+                    {/* Glow effect */}
+                    <View style={[styles.cardGlow, { backgroundColor: getStatusDisplay(activeJob.status).color + '10' }]} />
+                    
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(activeJob.status).color + '15' }]}>
+                      <Icon name={getStatusDisplay(activeJob.status).icon as any} size={18} color={getStatusDisplay(activeJob.status).color} />
+                      <Text style={[styles.statusText, { color: getStatusDisplay(activeJob.status).color }]}>
+                        {getStatusDisplay(activeJob.status).text}
+                      </Text>
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.jobInfoRow}>
+                      <View>
+                        <Text style={styles.jobCarReg}>{activeJob.vehicle?.registration}</Text>
+                        <Text style={styles.jobCarColour}>{activeJob.vehicle?.colour}</Text>
+                      </View>
+                      <Text style={styles.jobPrice}>£25</Text>
+                    </View>
+
+                    {activeJob.washer_name && (
+                      <>
+                        <View style={styles.divider} />
+                        <View style={styles.washerInfo}>
+                          <Icon name="person" size={16} color="#666" />
+                          <Text style={styles.washerName}>{activeJob.washer_name}</Text>
+                        </View>
+                      </>
+                    )}
+
+                    {(activeJob.status === 'accepted' || activeJob.status === 'in_progress') && (
+                      <TouchableOpacity 
+                        style={styles.chatButtonWrapper}
+                        onPress={() => router.push(`/chat/${activeJob.id}`)}
+                        activeOpacity={0.8}
                       >
-                        <Icon name="water" size={26} color="#00D4AA" />
-                      </LinearGradient>
-                    </View>
-                    <View style={styles.serviceInfo}>
-                      <Text style={styles.serviceName}>Exterior Wash</Text>
-                      <Text style={styles.serviceDesc}>Full exterior hand wash & dry</Text>
-                    </View>
-                    <Text style={styles.servicePrice}>£25</Text>
+                        <LinearGradient
+                          colors={['#007AFF', '#0066DD']}
+                          style={styles.chatButton}
+                        >
+                          <Icon name="chatbubble" size={20} color="#FFF" />
+                          <Text style={styles.chatButtonText}>Message Washer</Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    )}
+
+                    {activeJob.status === 'requested' && (
+                      <TouchableOpacity style={styles.cancelButton} onPress={cancelJob} activeOpacity={0.7}>
+                        <Text style={styles.cancelButtonText}>Cancel Booking</Text>
+                      </TouchableOpacity>
+                    )}
                   </LinearGradient>
                 </View>
               </View>
+            ) : (
+              // Booking Form
+              <>
+                {/* Car Details Section */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>YOUR CAR</Text>
+                  
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Registration (e.g. AB12 CDE)"
+                      placeholderTextColor="#4a4a4a"
+                      value={carReg}
+                      onChangeText={setCarReg}
+                      autoCapitalize="characters"
+                    />
+                  </View>
 
-              {/* Book Button */}
-              <View style={styles.section}>
-                <TouchableOpacity
-                  style={styles.bookButtonWrapper}
-                  onPress={handleBook}
-                  disabled={booking}
-                  activeOpacity={0.9}
-                >
-                  <LinearGradient
-                    colors={booking ? ['#1a1a1a', '#1a1a1a'] : ['#00D4AA', '#00B894']}
-                    style={styles.bookButton}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Colour (e.g. Black, White, Silver)"
+                      placeholderTextColor="#4a4a4a"
+                      value={carColour}
+                      onChangeText={setCarColour}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                </View>
+
+                {/* Service Section */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>SERVICE</Text>
+                  <View style={styles.cardWrapper}>
+                    <LinearGradient
+                      colors={['#1a1a1a', '#141414']}
+                      style={styles.serviceCard}
+                    >
+                      <View style={styles.serviceIconContainer}>
+                        <LinearGradient
+                          colors={['rgba(0, 212, 170, 0.25)', 'rgba(0, 212, 170, 0.08)']}
+                          style={styles.serviceIconGradient}
+                        >
+                          <Icon name="water" size={26} color="#00D4AA" />
+                        </LinearGradient>
+                      </View>
+                      <View style={styles.serviceInfo}>
+                        <Text style={styles.serviceName}>Exterior Wash</Text>
+                        <Text style={styles.serviceDesc}>Full exterior hand wash & dry</Text>
+                      </View>
+                      <Text style={styles.servicePrice}>£25</Text>
+                    </LinearGradient>
+                  </View>
+                </View>
+
+                {/* Book Button */}
+                <View style={styles.section}>
+                  <TouchableOpacity
+                    style={styles.bookButtonWrapper}
+                    onPress={handleBook}
+                    disabled={booking}
+                    activeOpacity={0.9}
                   >
-                    {/* Glow behind button */}
-                    <View style={styles.buttonGlow} />
-                    
-                    {booking ? (
-                      <ActivityIndicator color="#666" size="small" />
-                    ) : (
-                      <Text style={styles.bookButtonText}>Book Now • £25</Text>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  </View>
+                    <LinearGradient
+                      colors={booking ? ['#1a1a1a', '#1a1a1a'] : ['#00D4AA', '#00B894']}
+                      style={styles.bookButton}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      {/* Glow behind button */}
+                      <View style={styles.buttonGlow} />
+                      
+                      {booking ? (
+                        <ActivityIndicator color="#666" size="small" />
+                      ) : (
+                        <Text style={styles.bookButtonText}>Book Now • £25</Text>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
