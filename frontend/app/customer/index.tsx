@@ -244,31 +244,25 @@ export default function CustomerScreen() {
         style={StyleSheet.absoluteFill}
       />
       
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          <LinearGradient
-            colors={['rgba(10, 10, 10, 1)', 'rgba(10, 10, 10, 0)']}
-            style={styles.headerGradient}
-          >
-            <View style={styles.header}>
-              <TouchableOpacity onPress={handleLogout} style={styles.headerButton}>
-                <Icon name="log-out-outline" size={22} color="#FF3B30" />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>SHINIKO</Text>
-              <View style={styles.headerButton} />
-            </View>
-          </LinearGradient>
-        </View>
-
-        <ScrollView 
-          style={styles.scrollView} 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleLogout} style={styles.headerButton}>
+              <Icon name="log-out-outline" size={22} color="#FF3B30" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>SHINIKO</Text>
+            <View style={styles.headerButton} />
+          </View>
+
+          <ScrollView 
+            style={styles.scrollView} 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
           {/* Location Section */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>YOUR LOCATION</Text>
