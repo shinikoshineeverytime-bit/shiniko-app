@@ -11,7 +11,6 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import Icon from '../components/Icon';
@@ -22,7 +21,6 @@ export default function WelcomeScreen() {
   const [name, setName] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showNameInput, setShowNameInput] = useState(false);
 
   // If user is already logged in, redirect to their dashboard
   useEffect(() => {
@@ -31,19 +29,18 @@ export default function WelcomeScreen() {
     }
   }, [user, isLoading]);
 
-  const handleRoleSelect = (role: UserRole) => {
+  const handleRoleSelect = async (role: UserRole) => {
     setSelectedRole(role);
-    setShowNameInput(true);
   };
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      Alert.alert('Name Required', 'Please enter your name to continue');
+      Alert.alert('Name Required', 'Please enter your name');
       return;
     }
 
     if (!selectedRole) {
-      Alert.alert('Role Required', 'Please select how you want to use Shiniko');
+      Alert.alert('Select Option', 'Please select an option above');
       return;
     }
 
@@ -52,16 +49,10 @@ export default function WelcomeScreen() {
       await login(name.trim(), selectedRole);
       router.replace(`/${selectedRole}`);
     } catch (error) {
-      Alert.alert('Error', 'Failed to create account. Please try again.');
+      Alert.alert('Error', 'Failed to continue. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleBack = () => {
-    setShowNameInput(false);
-    setSelectedRole(null);
-    setName('');
   };
 
   if (isLoading) {
@@ -84,133 +75,65 @@ export default function WelcomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.brandName}>SHINIKO</Text>
-          <Text style={styles.tagline}>Shine — Every Time</Text>
+          <Text style={styles.tagline}>Exterior Car Wash • £25</Text>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {!showNameInput ? (
-            // Role Selection
-            <>
-              <Text style={styles.title}>Welcome</Text>
-              <Text style={styles.subtitle}>Choose how you want to use Shiniko</Text>
+        <View style={styles.content}>
+          {/* Role Selection */}
+          <TouchableOpacity 
+            style={[styles.roleCard, selectedRole === 'customer' && styles.roleCardSelected]}
+            onPress={() => handleRoleSelect('customer')}
+            activeOpacity={0.8}
+          >
+            <Icon name="car-sport" size={32} color={selectedRole === 'customer' ? '#00D4AA' : '#666'} />
+            <Text style={[styles.roleTitle, selectedRole === 'customer' && styles.roleTitleSelected]}>
+              Get a wash
+            </Text>
+          </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.roleCard}
-                onPress={() => handleRoleSelect('customer')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.roleIconContainer}>
-                  <Icon name="car-sport" size={40} color="#00D4AA" />
-                </View>
-                <View style={styles.roleTextContainer}>
-                  <Text style={styles.roleTitle}>I need a car wash</Text>
-                  <Text style={styles.roleDescription}>Request an exterior wash at your location</Text>
-                </View>
-                <Icon name="chevron-forward" size={24} color="#666" />
-              </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.roleCard, selectedRole === 'washer' && styles.roleCardSelected]}
+            onPress={() => handleRoleSelect('washer')}
+            activeOpacity={0.8}
+          >
+            <Icon name="water" size={32} color={selectedRole === 'washer' ? '#007AFF' : '#666'} />
+            <Text style={[styles.roleTitle, selectedRole === 'washer' && styles.roleTitleSelected]}>
+              Wash cars
+            </Text>
+          </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.roleCard}
-                onPress={() => handleRoleSelect('washer')}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.roleIconContainer, { backgroundColor: 'rgba(0, 122, 255, 0.15)' }]}>
-                  <Icon name="water" size={40} color="#007AFF" />
-                </View>
-                <View style={styles.roleTextContainer}>
-                  <Text style={styles.roleTitle}>I'm a car washer</Text>
-                  <Text style={styles.roleDescription}>Accept jobs and wash cars nearby</Text>
-                </View>
-                <Icon name="chevron-forward" size={24} color="#666" />
-              </TouchableOpacity>
+          {/* Name Input - Always visible */}
+          <TextInput
+            style={styles.nameInput}
+            placeholder="Your name"
+            placeholderTextColor="#666"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+          />
 
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
-                <View style={styles.dividerLine} />
-              </View>
+          {/* Continue Button */}
+          <TouchableOpacity
+            style={[
+              styles.continueButton,
+              (!name.trim() || !selectedRole || isSubmitting) && styles.continueButtonDisabled
+            ]}
+            onPress={handleSubmit}
+            disabled={!name.trim() || !selectedRole || isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#0A0A0A" />
+            ) : (
+              <Text style={styles.continueButtonText}>Continue</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
-              {/* Drive to Car Wash Option */}
-              <TouchableOpacity 
-                style={[styles.roleCard, styles.driveCard]}
-                onPress={() => router.push('/locations')}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.roleIconContainer, { backgroundColor: 'rgba(255, 184, 0, 0.15)' }]}>
-                  <Icon name="navigate" size={40} color="#FFB800" />
-                </View>
-                <View style={styles.roleTextContainer}>
-                  <Text style={styles.roleTitle}>Drive to a Car Wash</Text>
-                  <Text style={styles.roleDescription}>Find car wash locations near you</Text>
-                </View>
-                <Icon name="chevron-forward" size={24} color="#666" />
-              </TouchableOpacity>
-            </>
-          ) : (
-            // Name Input
-            <>
-              <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                <Icon name="arrow-back" size={24} color="#FFF" />
-              </TouchableOpacity>
-
-              <View style={styles.nameInputSection}>
-                <View style={[
-                  styles.selectedRoleBadge,
-                  { backgroundColor: selectedRole === 'customer' ? 'rgba(0, 212, 170, 0.15)' : 'rgba(0, 122, 255, 0.15)' }
-                ]}>
-                  <Icon 
-                    name={selectedRole === 'customer' ? 'car-sport' : 'water'} 
-                    size={20} 
-                    color={selectedRole === 'customer' ? '#00D4AA' : '#007AFF'} 
-                  />
-                  <Text style={[
-                    styles.selectedRoleText,
-                    { color: selectedRole === 'customer' ? '#00D4AA' : '#007AFF' }
-                  ]}>
-                    {selectedRole === 'customer' ? 'Customer' : 'Washer'}
-                  </Text>
-                </View>
-
-                <Text style={styles.nameTitle}>What's your name?</Text>
-                <Text style={styles.nameSubtitle}>This will be shown to {selectedRole === 'customer' ? 'washers' : 'customers'}</Text>
-
-                <TextInput
-                  style={styles.nameInput}
-                  placeholder="Enter your name"
-                  placeholderTextColor="#666"
-                  value={name}
-                  onChangeText={setName}
-                  autoFocus
-                  autoCapitalize="words"
-                  returnKeyType="done"
-                  onSubmitEditing={handleSubmit}
-                />
-
-                <TouchableOpacity
-                  style={[
-                    styles.continueButton,
-                    (!name.trim() || isSubmitting) && styles.continueButtonDisabled
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={!name.trim() || isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <ActivityIndicator color="#0A0A0A" />
-                  ) : (
-                    <>
-                      <Text style={styles.continueButtonText}>Get Started</Text>
-                      <Icon name="arrow-forward" size={20} color="#0A0A0A" />
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </ScrollView>
-
+        {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>On-demand exterior car wash</Text>
+          <Text style={styles.footerText}>On-demand mobile car wash</Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -222,45 +145,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0A0A0A',
   },
-  keyboardView: {
-    flex: 1,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  keyboardView: {
+    flex: 1,
+  },
   header: {
     alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   brandName: {
-    fontSize: 42,
+    fontSize: 32,
     fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 8,
+    color: '#FFF',
+    letterSpacing: 6,
   },
   tagline: {
     fontSize: 14,
     color: '#00D4AA',
     marginTop: 8,
-    letterSpacing: 2,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#888',
-    marginBottom: 32,
   },
   roleCard: {
     flexDirection: 'row',
@@ -268,107 +180,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
+    marginBottom: 12,
+    gap: 16,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  driveCard: {
-    borderColor: '#FFB80030',
-  },
-  roleIconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(0, 212, 170, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  roleTextContainer: {
-    flex: 1,
+  roleCardSelected: {
+    borderColor: '#00D4AA',
+    backgroundColor: 'rgba(0, 212, 170, 0.1)',
   },
   roleTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  roleDescription: {
-    fontSize: 14,
     color: '#888',
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#2A2A2A',
-  },
-  dividerText: {
-    color: '#666',
-    paddingHorizontal: 16,
-    fontSize: 12,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    marginLeft: -8,
-  },
-  nameInputSection: {
-    flex: 1,
-  },
-  selectedRoleBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 8,
-    marginBottom: 32,
-  },
-  selectedRoleText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  nameTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  nameSubtitle: {
-    fontSize: 16,
-    color: '#888',
-    marginBottom: 32,
+  roleTitleSelected: {
+    color: '#FFF',
   },
   nameInput: {
     backgroundColor: '#1A1A1A',
     borderRadius: 16,
-    padding: 20,
+    padding: 18,
     fontSize: 18,
     color: '#FFF',
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-    marginBottom: 24,
+    marginTop: 20,
+    marginBottom: 20,
+    textAlign: 'center',
   },
   continueButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#00D4AA',
-    paddingVertical: 18,
     borderRadius: 16,
-    gap: 8,
+    padding: 18,
+    alignItems: 'center',
   },
   continueButtonDisabled: {
-    backgroundColor: '#1A1A1A',
+    opacity: 0.4,
   },
   continueButtonText: {
     fontSize: 18,
@@ -380,7 +226,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#555',
   },
 });
