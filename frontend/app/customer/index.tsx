@@ -281,7 +281,7 @@ export default function CustomerScreen() {
                 <Text style={styles.washerName}>Washer: {activeJob.washer_name}</Text>
               )}
 
-              {activeJob.status === 'accepted' && (
+              {(activeJob.status === 'accepted' || activeJob.status === 'in_progress') && (
                 <TouchableOpacity 
                   style={styles.chatButton}
                   onPress={() => router.push(`/chat/${activeJob.id}`)}
