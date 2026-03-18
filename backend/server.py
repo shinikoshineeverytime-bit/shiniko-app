@@ -28,7 +28,8 @@ STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
 
 # Platform fee percentage (5%)
 PLATFORM_FEE_PERCENT = 5
-SERVICE_PRICE_CENTS = 2500  # $25.00
+SERVICE_PRICE_CENTS = 2500  # £25.00
+CURRENCY = "gbp"
 
 # Create the main app without a prefix
 app = FastAPI()
