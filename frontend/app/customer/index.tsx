@@ -33,7 +33,6 @@ export default function CustomerScreen() {
   const [booking, setBooking] = useState(false);
   const [activeJob, setActiveJob] = useState<any>(null);
   
-  // Vehicle info - inline
   const [carReg, setCarReg] = useState('');
   const [carColour, setCarColour] = useState('');
 
@@ -46,7 +45,6 @@ export default function CustomerScreen() {
     checkActiveJob();
   }, [user]);
 
-  // Poll for job updates
   useEffect(() => {
     if (activeJob && activeJob.status !== 'completed') {
       const interval = setInterval(checkActiveJob, 5000);
@@ -129,7 +127,6 @@ export default function CustomerScreen() {
       return;
     }
 
-    // Confirm payment
     const confirmBooking = (): Promise<boolean> => {
       return new Promise((resolve) => {
         if (Platform.OS === 'web') {
@@ -152,15 +149,12 @@ export default function CustomerScreen() {
 
     setBooking(true);
     try {
-      // Create payment intent
       const paymentResponse = await axios.post(`${API_URL}/api/payments/create-intent`, {
         customer_id: user.id,
       });
 
-      // Confirm payment
       await axios.post(`${API_URL}/api/payments/confirm/${paymentResponse.data.payment_intent_id}`);
 
-      // Create job
       const jobResponse = await axios.post(`${API_URL}/api/jobs`, {
         customer_id: user.id,
         customer_name: user.name,
@@ -220,10 +214,10 @@ export default function CustomerScreen() {
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
-      case 'requested': return { text: 'Finding washer...', color: '#FFB800' };
-      case 'accepted': return { text: 'Washer on the way', color: '#00D4AA' };
-      case 'in_progress': return { text: 'Washing your car', color: '#007AFF' };
-      default: return { text: status, color: '#888' };
+      case 'requested': return { text: 'Finding washer...', color: '#FFB800', icon: 'time' };
+      case 'accepted': return { text: 'Washer on the way', color: '#00D4AA', icon: 'car' };
+      case 'in_progress': return { text: 'Washing your car', color: '#007AFF', icon: 'water' };
+      default: return { text: status, color: '#888', icon: 'time' };
     }
   };
 
@@ -246,100 +240,129 @@ export default function CustomerScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleLogout}>
+          <TouchableOpacity onPress={handleLogout} style={styles.headerButton}>
             <Icon name="log-out-outline" size={22} color="#FF3B30" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>SHINIKO</Text>
-          <View style={styles.userBadge}>
-            <Text style={styles.userName}>{user?.name}</Text>
-          </View>
+          <View style={styles.headerButton} />
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Location */}
-          <View style={styles.locationCard}>
-            <Icon name="location" size={20} color="#00D4AA" />
-            <Text style={styles.locationText} numberOfLines={1}>{address}</Text>
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Location Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>YOUR LOCATION</Text>
+            <View style={styles.locationCard}>
+              <View style={styles.locationIconContainer}>
+                <Icon name="location" size={22} color="#00D4AA" />
+              </View>
+              <Text style={styles.locationText} numberOfLines={2}>{address}</Text>
+            </View>
           </View>
 
           {activeJob ? (
             // Active Job View
-            <View style={styles.activeJobCard}>
-              <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(activeJob.status).color + '20' }]}>
-                <View style={[styles.statusDot, { backgroundColor: getStatusDisplay(activeJob.status).color }]} />
-                <Text style={[styles.statusText, { color: getStatusDisplay(activeJob.status).color }]}>
-                  {getStatusDisplay(activeJob.status).text}
-                </Text>
+            <View style={styles.section}>
+              <View style={styles.activeJobCard}>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(activeJob.status).color + '15' }]}>
+                  <Icon name={getStatusDisplay(activeJob.status).icon as any} size={18} color={getStatusDisplay(activeJob.status).color} />
+                  <Text style={[styles.statusText, { color: getStatusDisplay(activeJob.status).color }]}>
+                    {getStatusDisplay(activeJob.status).text}
+                  </Text>
+                </View>
+
+                <View style={styles.jobInfoRow}>
+                  <View>
+                    <Text style={styles.jobCarReg}>{activeJob.vehicle?.registration}</Text>
+                    <Text style={styles.jobCarColour}>{activeJob.vehicle?.colour}</Text>
+                  </View>
+                  <Text style={styles.jobPrice}>£25</Text>
+                </View>
+
+                {activeJob.washer_name && (
+                  <View style={styles.washerInfo}>
+                    <Icon name="person" size={16} color="#666" />
+                    <Text style={styles.washerName}>{activeJob.washer_name}</Text>
+                  </View>
+                )}
+
+                {(activeJob.status === 'accepted' || activeJob.status === 'in_progress') && (
+                  <TouchableOpacity 
+                    style={styles.chatButton}
+                    onPress={() => router.push(`/chat/${activeJob.id}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="chatbubble" size={20} color="#FFF" />
+                    <Text style={styles.chatButtonText}>Message Washer</Text>
+                  </TouchableOpacity>
+                )}
+
+                {activeJob.status === 'requested' && (
+                  <TouchableOpacity style={styles.cancelButton} onPress={cancelJob} activeOpacity={0.7}>
+                    <Text style={styles.cancelButtonText}>Cancel Booking</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-
-              <View style={styles.jobDetails}>
-                <Text style={styles.jobCar}>{activeJob.vehicle?.registration}</Text>
-                <Text style={styles.jobPrice}>£25.00</Text>
-              </View>
-
-              {activeJob.washer_name && (
-                <Text style={styles.washerName}>Washer: {activeJob.washer_name}</Text>
-              )}
-
-              {(activeJob.status === 'accepted' || activeJob.status === 'in_progress') && (
-                <TouchableOpacity 
-                  style={styles.chatButton}
-                  onPress={() => router.push(`/chat/${activeJob.id}`)}
-                >
-                  <Icon name="chatbubble" size={18} color="#FFF" />
-                  <Text style={styles.chatButtonText}>Message Washer</Text>
-                </TouchableOpacity>
-              )}
-
-              {activeJob.status === 'requested' && (
-                <TouchableOpacity style={styles.cancelButton} onPress={cancelJob}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              )}
             </View>
           ) : (
             // Booking Form
             <>
-              <Text style={styles.sectionTitle}>Your Car</Text>
-              
-              <TextInput
-                style={styles.input}
-                placeholder="Registration (e.g. AB12 CDE)"
-                placeholderTextColor="#666"
-                value={carReg}
-                onChangeText={setCarReg}
-                autoCapitalize="characters"
-              />
+              {/* Car Details Section */}
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>YOUR CAR</Text>
+                
+                <TextInput
+                  style={styles.input}
+                  placeholder="Registration (e.g. AB12 CDE)"
+                  placeholderTextColor="#555"
+                  value={carReg}
+                  onChangeText={setCarReg}
+                  autoCapitalize="characters"
+                />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Colour (e.g. Black, White, Silver)"
-                placeholderTextColor="#666"
-                value={carColour}
-                onChangeText={setCarColour}
-                autoCapitalize="words"
-              />
-
-              {/* Price & Book */}
-              <View style={styles.priceCard}>
-                <View>
-                  <Text style={styles.serviceName}>Exterior Wash</Text>
-                  <Text style={styles.serviceDesc}>Full exterior clean</Text>
-                </View>
-                <Text style={styles.price}>£25</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Colour (e.g. Black, White, Silver)"
+                  placeholderTextColor="#555"
+                  value={carColour}
+                  onChangeText={setCarColour}
+                  autoCapitalize="words"
+                />
               </View>
 
-              <TouchableOpacity
-                style={[styles.bookButton, booking && styles.bookButtonDisabled]}
-                onPress={handleBook}
-                disabled={booking}
-              >
-                {booking ? (
-                  <ActivityIndicator color="#0A0A0A" />
-                ) : (
-                  <Text style={styles.bookButtonText}>Book Now • £25</Text>
-                )}
-              </TouchableOpacity>
+              {/* Service Section */}
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>SERVICE</Text>
+                <View style={styles.serviceCard}>
+                  <View style={styles.serviceIconContainer}>
+                    <Icon name="water" size={24} color="#00D4AA" />
+                  </View>
+                  <View style={styles.serviceInfo}>
+                    <Text style={styles.serviceName}>Exterior Wash</Text>
+                    <Text style={styles.serviceDesc}>Full exterior hand wash & dry</Text>
+                  </View>
+                  <Text style={styles.servicePrice}>£25</Text>
+                </View>
+              </View>
+
+              {/* Book Button */}
+              <View style={styles.section}>
+                <TouchableOpacity
+                  style={[styles.bookButton, booking && styles.bookButtonDisabled]}
+                  onPress={handleBook}
+                  disabled={booking}
+                  activeOpacity={0.8}
+                >
+                  {booking ? (
+                    <ActivityIndicator color="#0A0A0A" size="small" />
+                  ) : (
+                    <Text style={styles.bookButtonText}>Book Now • £25</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </>
           )}
         </ScrollView>
@@ -359,109 +382,131 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#888',
-    marginTop: 12,
+    color: '#666',
+    marginTop: 16,
+    fontSize: 15,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  headerButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#FFF',
-    letterSpacing: 3,
+    letterSpacing: 4,
   },
-  userBadge: {
-    backgroundColor: 'rgba(0, 212, 170, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  userName: {
-    fontSize: 13,
-    color: '#00D4AA',
-    fontWeight: '600',
-  },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+  section: {
+    marginBottom: 28,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    letterSpacing: 1.5,
+    marginBottom: 12,
   },
   locationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#151515',
+    borderRadius: 14,
+    padding: 16,
+    gap: 14,
+  },
+  locationIconContainer: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    padding: 14,
-    gap: 10,
-    marginBottom: 24,
+    backgroundColor: 'rgba(0, 212, 170, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   locationText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     color: '#FFF',
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#888',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    fontWeight: '500',
   },
   input: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#151515',
+    borderRadius: 14,
+    padding: 18,
     fontSize: 16,
     color: '#FFF',
     marginBottom: 12,
+    minHeight: 56,
   },
-  priceCard: {
+  serviceCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#151515',
+    borderRadius: 14,
+    padding: 18,
+    gap: 14,
+  },
+  serviceIconContainer: {
+    width: 50,
+    height: 50,
     borderRadius: 12,
-    padding: 16,
-    marginTop: 12,
-    marginBottom: 20,
+    backgroundColor: 'rgba(0, 212, 170, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  serviceInfo: {
+    flex: 1,
   },
   serviceName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: '#FFF',
   },
   serviceDesc: {
     fontSize: 13,
-    color: '#888',
-    marginTop: 2,
+    color: '#666',
+    marginTop: 3,
   },
-  price: {
-    fontSize: 28,
+  servicePrice: {
+    fontSize: 26,
     fontWeight: '700',
     color: '#00D4AA',
   },
   bookButton: {
     backgroundColor: '#00D4AA',
     borderRadius: 14,
-    padding: 18,
+    padding: 20,
     alignItems: 'center',
-    marginBottom: 30,
+    minHeight: 60,
+    justifyContent: 'center',
   },
   bookButtonDisabled: {
     opacity: 0.5,
   },
   bookButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: '#0A0A0A',
   },
   activeJobCard: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#151515',
     borderRadius: 16,
     padding: 20,
   },
@@ -469,41 +514,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
     gap: 8,
-    marginBottom: 16,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    marginBottom: 20,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
-  jobDetails: {
+  jobInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    marginBottom: 16,
   },
-  jobCar: {
-    fontSize: 20,
+  jobCarReg: {
+    fontSize: 22,
     fontWeight: '700',
     color: '#FFF',
   },
+  jobCarColour: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
   jobPrice: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     color: '#00D4AA',
   },
+  washerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#222',
+  },
   washerName: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#888',
-    marginBottom: 16,
   },
   chatButton: {
     flexDirection: 'row',
@@ -511,18 +564,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#007AFF',
     borderRadius: 12,
-    padding: 14,
-    gap: 8,
-    marginBottom: 10,
+    padding: 16,
+    gap: 10,
+    marginBottom: 12,
+    minHeight: 54,
   },
   chatButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
   },
   cancelButton: {
     alignItems: 'center',
-    padding: 12,
+    padding: 14,
+    minHeight: 48,
+    justifyContent: 'center',
   },
   cancelButtonText: {
     fontSize: 15,
