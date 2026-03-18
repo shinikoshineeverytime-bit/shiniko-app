@@ -258,16 +258,17 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#1A1A1A',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: -8,
   },
   headerInfo: {
     flex: 1,
@@ -279,15 +280,15 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: 13,
+    color: '#666',
     marginTop: 2,
   },
   keyboardView: {
     flex: 1,
   },
   messagesList: {
-    padding: 16,
+    padding: 20,
     flexGrow: 1,
   },
   emptyContainer: {
@@ -295,6 +296,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 80,
+    paddingHorizontal: 20,
   },
   emptyTitle: {
     fontSize: 20,
