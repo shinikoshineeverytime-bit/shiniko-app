@@ -431,7 +431,8 @@ export default function CustomerScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
+  </View>
   );
 }
 
