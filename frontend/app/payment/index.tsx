@@ -22,11 +22,7 @@ export default function PaymentScreen() {
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [paymentReady, setPaymentReady] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-  
-  // Stripe hooks - lazy loaded for native only
-  const [stripeHooks, setStripeHooks] = useState<any>(null);
   
   // Parse params
   const customerId = params.customerId as string;
@@ -37,15 +33,6 @@ export default function PaymentScreen() {
   const vehicleData = params.vehicle ? JSON.parse(params.vehicle as string) : null;
 
   useEffect(() => {
-    // Load Stripe only on native platforms
-    if (Platform.OS !== 'web') {
-      try {
-        const stripe = require('@stripe/stripe-react-native');
-        setStripeHooks(stripe);
-      } catch (e) {
-        console.log('Stripe not available:', e);
-      }
-    }
     initializePayment();
   }, []);
 
@@ -58,58 +45,61 @@ export default function PaymentScreen() {
         customer_id: customerId,
       });
 
-      const { client_secret, payment_intent_id } = response.data;
-      setClientSecret(client_secret);
+      const { payment_intent_id } = response.data;
       setPaymentIntentId(payment_intent_id);
       setPaymentReady(true);
       
     } catch (error: any) {
       console.error('Payment init error:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Failed to set up payment. Please try again.');
-      } else {
-        Alert.alert('Error', 'Failed to set up payment. Please try again.');
-      }
+      showAlert('Error', 'Failed to set up payment. Please try again.');
     } finally {
       setInitializing(false);
     }
   };
 
+  const showAlert = (title: string, message: string, onOk?: () => void) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}: ${message}`);
+      onOk?.();
+    } else {
+      Alert.alert(title, message, onOk ? [{ text: 'OK', onPress: onOk }] : undefined);
+    }
+  };
+
   const handlePayment = async () => {
-    if (!paymentReady || !clientSecret) {
-      if (Platform.OS === 'web') {
-        window.alert('Payment not ready. Please wait.');
-      } else {
-        Alert.alert('Error', 'Payment not ready. Please wait.');
-      }
+    if (!paymentReady) {
+      showAlert('Error', 'Payment not ready. Please wait.');
       return;
     }
+
+    // Confirm payment with user
+    const confirmPayment = () => {
+      return new Promise<boolean>((resolve) => {
+        if (Platform.OS === 'web') {
+          resolve(window.confirm('Confirm payment of $25.00 for your car wash?'));
+        } else {
+          Alert.alert(
+            'Confirm Payment',
+            'Pay $25.00 for exterior car wash?',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Pay $25.00', onPress: () => resolve(true) },
+            ]
+          );
+        }
+      });
+    };
+
+    const confirmed = await confirmPayment();
+    if (!confirmed) return;
 
     setLoading(true);
 
     try {
-      if (Platform.OS === 'web') {
-        // Web: Simulate payment for testing
-        const confirmed = window.confirm(
-          'TEST MODE: Confirm payment of $25.00?\n\n(On mobile app, this shows the Stripe payment form)'
-        );
-        
-        if (confirmed) {
-          await createJobAfterPayment();
-        }
-      } else {
-        // Native: For now, simulate success (real Stripe would need native build)
-        // In production with native build, you'd use:
-        // const { initPaymentSheet, presentPaymentSheet } = stripeHooks.useStripe();
-        await createJobAfterPayment();
-      }
+      await createJobAfterPayment();
     } catch (error: any) {
       console.error('Payment error:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Payment failed. Please try again.');
-      } else {
-        Alert.alert('Error', 'Payment failed. Please try again.');
-      }
+      showAlert('Error', 'Payment failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -135,25 +125,20 @@ export default function PaymentScreen() {
         payment_intent_id: paymentIntentId,
       });
 
-      // Navigate back to customer screen with success
-      if (Platform.OS === 'web') {
-        window.alert('Payment successful! Your wash request has been sent to nearby washers.');
-      } else {
-        Alert.alert(
-          'Payment Successful!',
-          'Your wash request has been sent to nearby washers.',
-          [{ text: 'OK' }]
-        );
-      }
+      // Show success and navigate back
+      showAlert(
+        'Payment Successful!',
+        'Your wash request has been sent to nearby washers.',
+        () => router.replace('/customer')
+      );
       
-      router.replace('/customer');
+      // For web, navigate immediately after alert
+      if (Platform.OS === 'web') {
+        router.replace('/customer');
+      }
     } catch (error: any) {
       console.error('Job creation error:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Payment was successful but failed to create job. Please contact support.');
-      } else {
-        Alert.alert('Error', 'Payment was successful but failed to create job. Please contact support.');
-      }
+      showAlert('Error', 'Payment was successful but failed to create job. Please contact support.');
     }
   };
 
