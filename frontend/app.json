@@ -51,13 +51,6 @@
           "icon": "./assets/images/icon.png",
           "color": "#00D4AA"
         }
-      ],
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.shiniko.carwash",
-          "enableGooglePay": true
-        }
       ]
     ],
     "experiments": {
