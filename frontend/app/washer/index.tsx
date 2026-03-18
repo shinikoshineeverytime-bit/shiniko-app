@@ -559,8 +559,8 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginHorizontal: 20,
+    marginBottom: 20,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -568,16 +568,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 30,
   },
   jobCard: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#151515',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
+    padding: 18,
+    marginBottom: 14,
   },
   jobHeader: {
     flexDirection: 'row',
