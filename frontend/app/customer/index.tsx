@@ -184,33 +184,27 @@ export default function CustomerHomeScreen() {
       return;
     }
 
-    setRequesting(true);
-    try {
-      const response = await axios.post(`${API_URL}/api/jobs`, {
-        customer_id: user.id,
-        customer_name: user.name,
-        location: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          address: address,
-        },
-        vehicle: {
-          registration: selectedVehicle.registration,
-          colour: selectedVehicle.colour,
-          make: selectedVehicle.make || null,
-          model: selectedVehicle.model || null,
-          photo: selectedVehicle.photo || null,
-          notes: selectedVehicle.notes || null,
-        },
-      });
-      setActiveJob(response.data);
-      Alert.alert('Request Sent!', 'Nearby washers have been notified. You\'ll get a notification when someone accepts.');
-    } catch (error) {
-      console.error('Error requesting wash:', error);
-      Alert.alert('Error', 'Failed to request wash. Please try again.');
-    } finally {
-      setRequesting(false);
-    }
+    // Navigate to payment screen with all required data
+    const vehicleData = {
+      registration: selectedVehicle.registration,
+      colour: selectedVehicle.colour,
+      make: selectedVehicle.make || null,
+      model: selectedVehicle.model || null,
+      photo: selectedVehicle.photo || null,
+      notes: selectedVehicle.notes || null,
+    };
+
+    router.push({
+      pathname: '/payment',
+      params: {
+        customerId: user.id,
+        customerName: user.name,
+        latitude: location.latitude.toString(),
+        longitude: location.longitude.toString(),
+        address: address,
+        vehicle: JSON.stringify(vehicleData),
+      },
+    });
   };
 
   const cancelJob = async () => {
