@@ -43,6 +43,8 @@ const EMOJI_MAP: Record<string, string> = {
   'logo-apple': '🍎',
   'briefcase': '💼',
   'lock-closed': '🔒',
+  'send': '➤',
+  'flash': '⚡',
 };
 
 interface IconProps {
