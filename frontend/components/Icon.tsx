@@ -28,6 +28,7 @@ const EMOJI_MAP: Record<string, string> = {
   'pencil': '✏',
   'trash-outline': '🗑',
   'chatbubble': '💬',
+  'chatbubbles-outline': '💬',
   'call': '📞',
   'list': '☰',
   'map': '🗺',
