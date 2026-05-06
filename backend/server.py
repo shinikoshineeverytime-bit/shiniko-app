@@ -1,14 +1,15 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import json
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import httpx
 import stripe
@@ -24,7 +25,6 @@ db = client[os.environ['DB_NAME']]
 
 # Stripe configuration
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
-STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
 
 # Platform fee percentage (5%)
 PLATFORM_FEE_PERCENT = 5
@@ -397,20 +397,37 @@ async def accept_job(job_id: str, accept_data: JobAccept):
     if job["status"] != JobStatus.requested:
         raise HTTPException(status_code=400, detail="Job is not available for acceptance")
     
+    # Check washer has a connected Stripe account (skip in test mode if Connect unavailable)
+    washer_account = await db.washer_accounts.find_one({"user_id": accept_data.washer_id})
+    stripe_key = os.environ.get('STRIPE_SECRET_KEY', '')
+    is_test_mode = stripe_key.startswith('sk_test_')
+    
+    if not is_test_mode and (not washer_account or not washer_account.get("onboarding_complete")):
+        raise HTTPException(
+            status_code=400,
+            detail="Please set up your payment account before accepting jobs"
+        )
+    
     update_data = {
         "washer_id": accept_data.washer_id,
         "washer_name": accept_data.washer_name,
         "status": JobStatus.accepted,
-        "accepted_at": datetime.utcnow()
+        "accepted_at": datetime.now(timezone.utc)
     }
     
     await db.jobs.update_one({"id": job_id}, {"$set": update_data})
     updated_job = await db.jobs.find_one({"id": job_id})
     
+    # Link washer to the payment transaction for this job
+    await db.payment_transactions.update_one(
+        {"job_id": job_id},
+        {"$set": {"washer_id": accept_data.washer_id, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
     # Notify customer that washer accepted
     await notify_customer(
         job["customer_id"],
-        "Washer on the way! 🚙",
+        "Washer on the way!",
         f"{accept_data.washer_name} accepted your request and is heading to you.",
         {"type": "job_accepted", "job_id": job_id, "washer_name": accept_data.washer_name}
     )
@@ -453,15 +470,46 @@ async def complete_job(job_id: str):
     
     await db.jobs.update_one(
         {"id": job_id},
-        {"$set": {"status": JobStatus.completed, "completed_at": datetime.utcnow()}}
+        {"$set": {"status": JobStatus.completed, "completed_at": datetime.now(timezone.utc)}}
     )
+    
+    # Create automatic transfer to washer's connected account
+    if job.get("washer_id"):
+        washer_account = await db.washer_accounts.find_one({"user_id": job["washer_id"]})
+        if washer_account and washer_account.get("onboarding_complete"):
+            try:
+                payment_tx = await db.payment_transactions.find_one({
+                    "job_id": job_id,
+                    "payment_status": "paid",
+                    "transfer_id": None,
+                })
+                if payment_tx:
+                    transfer = stripe.Transfer.create(
+                        amount=payment_tx["washer_payout"],
+                        currency=CURRENCY,
+                        destination=washer_account["stripe_account_id"],
+                        transfer_group=f"job_{job_id}",
+                        metadata={"job_id": job_id, "washer_id": job["washer_id"]},
+                    )
+                    await db.payment_transactions.update_one(
+                        {"id": payment_tx["id"]},
+                        {"$set": {
+                            "transfer_id": transfer.id,
+                            "washer_id": job["washer_id"],
+                            "updated_at": datetime.now(timezone.utc),
+                        }}
+                    )
+                    logger.info(f"Transfer {transfer.id} created for washer {job['washer_id']}")
+            except stripe.error.StripeError as e:
+                logger.error(f"Transfer error for job {job_id}: {e}")
+    
     updated_job = await db.jobs.find_one({"id": job_id})
     
     # Notify customer that wash is complete
     await notify_customer(
         job["customer_id"],
-        "Wash Complete! ✨",
-        f"Your car is now sparkling clean! Thank you for using Shiniko.",
+        "Wash Complete!",
+        "Your car is now sparkling clean! Thank you for using Shiniko.",
         {"type": "job_completed", "job_id": job_id}
     )
     
@@ -784,178 +832,329 @@ async def get_quick_actions(role: str = "customer"):
 
 # ==================== END CHAT / MESSAGING ====================
 
-# ==================== PAYMENTS (STRIPE) ====================
+# ==================== STRIPE CONNECT (MARKETPLACE) ====================
 
-class PaymentStatus(str, Enum):
-    pending = "pending"
-    succeeded = "succeeded"
-    failed = "failed"
-    refunded = "refunded"
+class ConnectAccountRequest(BaseModel):
+    user_id: str
+    origin_url: str
 
-class Payment(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    stripe_payment_intent_id: str
-    job_id: Optional[str] = None
-    customer_id: str
-    washer_id: Optional[str] = None
-    amount_cents: int  # Total amount in cents
-    platform_fee_cents: int  # 5% platform fee
-    washer_payout_cents: int  # 95% for washer
-    currency: str = "usd"
-    status: PaymentStatus = PaymentStatus.pending
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+class OnboardingLinkRequest(BaseModel):
+    user_id: str
+    origin_url: str
 
-class CreatePaymentIntentRequest(BaseModel):
-    customer_id: str
-    washer_id: Optional[str] = None
-    job_id: Optional[str] = None
+@api_router.post("/connect/create-account")
+async def create_connect_account(request: ConnectAccountRequest):
+    """Create a Stripe Express connected account for a washer"""
+    user = await db.users.find_one({"id": request.user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-class PaymentIntentResponse(BaseModel):
-    client_secret: str
-    payment_intent_id: str
-    amount_cents: int
-    platform_fee_cents: int
-    washer_payout_cents: int
-    publishable_key: str
+    existing = await db.washer_accounts.find_one({"user_id": request.user_id})
+    if existing:
+        # Account exists, generate fresh onboarding link
+        try:
+            account_link = stripe.AccountLink.create(
+                account=existing["stripe_account_id"],
+                refresh_url=f"{request.origin_url}/washer",
+                return_url=f"{request.origin_url}/washer?onboarding=complete",
+                type='account_onboarding',
+            )
+            return {
+                "stripe_account_id": existing["stripe_account_id"],
+                "onboarding_url": account_link.url,
+                "already_exists": True,
+            }
+        except stripe.error.StripeError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.post("/payments/create-intent", response_model=PaymentIntentResponse)
-async def create_payment_intent(request: CreatePaymentIntentRequest):
-    """
-    Create a Stripe PaymentIntent for a car wash service.
-    Price: $25.00 (2500 cents)
-    Platform fee: 5% ($1.25)
-    Washer gets: 95% ($23.75)
-    """
     try:
-        # Calculate fee split
-        amount_cents = SERVICE_PRICE_CENTS
-        platform_fee_cents = int(amount_cents * PLATFORM_FEE_PERCENT / 100)
-        washer_payout_cents = amount_cents - platform_fee_cents
-        
-        # Create PaymentIntent with Stripe
-        payment_intent = stripe.PaymentIntent.create(
-            amount=amount_cents,
-            currency=CURRENCY,
-            payment_method_types=["card"],
+        account = stripe.Account.create(
+            type='express',
+            country='GB',
+            capabilities={
+                'card_payments': {'requested': True},
+                'transfers': {'requested': True},
+            },
+            metadata={'user_id': request.user_id, 'platform': 'shiniko'},
+        )
+
+        await db.washer_accounts.insert_one({
+            "user_id": request.user_id,
+            "stripe_account_id": account.id,
+            "onboarding_complete": False,
+            "created_at": datetime.now(timezone.utc),
+        })
+
+        account_link = stripe.AccountLink.create(
+            account=account.id,
+            refresh_url=f"{request.origin_url}/washer",
+            return_url=f"{request.origin_url}/washer?onboarding=complete",
+            type='account_onboarding',
+        )
+
+        return {
+            "stripe_account_id": account.id,
+            "onboarding_url": account_link.url,
+            "already_exists": False,
+        }
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe Connect error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.post("/connect/onboarding-link")
+async def get_onboarding_link(request: OnboardingLinkRequest):
+    """Get a fresh onboarding link for a washer"""
+    washer_account = await db.washer_accounts.find_one({"user_id": request.user_id})
+    if not washer_account:
+        raise HTTPException(status_code=404, detail="No connected account found. Create one first.")
+
+    try:
+        account_link = stripe.AccountLink.create(
+            account=washer_account["stripe_account_id"],
+            refresh_url=f"{request.origin_url}/washer",
+            return_url=f"{request.origin_url}/washer?onboarding=complete",
+            type='account_onboarding',
+        )
+        return {"onboarding_url": account_link.url}
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/connect/account-status/{user_id}")
+async def get_connect_account_status(user_id: str):
+    """Check if a washer's connected account is ready for payouts"""
+    washer_account = await db.washer_accounts.find_one({"user_id": user_id})
+    if not washer_account:
+        return {"has_account": False, "onboarding_complete": False}
+
+    try:
+        account = stripe.Account.retrieve(washer_account["stripe_account_id"])
+        is_complete = account.charges_enabled and account.payouts_enabled
+
+        if is_complete and not washer_account.get("onboarding_complete"):
+            await db.washer_accounts.update_one(
+                {"user_id": user_id},
+                {"$set": {"onboarding_complete": True}}
+            )
+
+        return {
+            "has_account": True,
+            "stripe_account_id": washer_account["stripe_account_id"],
+            "onboarding_complete": is_complete,
+            "charges_enabled": account.charges_enabled,
+            "payouts_enabled": account.payouts_enabled,
+        }
+    except stripe.error.StripeError as e:
+        return {"has_account": True, "onboarding_complete": False, "error": str(e)}
+
+@api_router.get("/connect/dashboard-link/{user_id}")
+async def get_dashboard_link(user_id: str):
+    """Get link to washer's Stripe Express dashboard to view payouts"""
+    washer_account = await db.washer_accounts.find_one({"user_id": user_id})
+    if not washer_account:
+        raise HTTPException(status_code=404, detail="No connected account found")
+
+    try:
+        login_link = stripe.Account.create_login_link(washer_account["stripe_account_id"])
+        return {"dashboard_url": login_link.url}
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/washer/{user_id}/earnings")
+async def get_washer_earnings(user_id: str):
+    """Get earnings summary for a washer"""
+    transactions = await db.payment_transactions.find({
+        "washer_id": user_id,
+        "payment_status": "paid",
+        "transfer_id": {"$ne": None},
+    }).to_list(1000)
+
+    total_earned = sum(t.get("washer_payout", 0) for t in transactions)
+    total_jobs = len(transactions)
+
+    return {
+        "total_earned_pence": total_earned,
+        "total_earned_display": f"\u00a3{total_earned / 100:.2f}",
+        "total_jobs": total_jobs,
+        "currency": "gbp",
+    }
+
+# ==================== CHECKOUT / PAYMENTS ====================
+
+class CheckoutRequest(BaseModel):
+    customer_id: str
+    customer_name: str
+    origin_url: str
+    location: Location
+    vehicle: JobVehicleInfo
+
+@api_router.post("/checkout/create-session")
+async def create_checkout_session(request: CheckoutRequest):
+    """Create a Stripe Checkout session for car wash payment"""
+    try:
+        platform_fee = int(SERVICE_PRICE_CENTS * PLATFORM_FEE_PERCENT / 100)
+        washer_payout = SERVICE_PRICE_CENTS - platform_fee
+
+        success_url = f"{request.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{request.origin_url}/customer"
+
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': CURRENCY,
+                    'product_data': {
+                        'name': 'Exterior Car Wash',
+                        'description': 'Full exterior hand wash & dry',
+                    },
+                    'unit_amount': SERVICE_PRICE_CENTS,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=success_url,
+            cancel_url=cancel_url,
             metadata={
-                "customer_id": request.customer_id,
-                "washer_id": request.washer_id or "",
-                "job_id": request.job_id or "",
-                "platform_fee_cents": str(platform_fee_cents),
-                "washer_payout_cents": str(washer_payout_cents),
+                'customer_id': request.customer_id,
+                'customer_name': request.customer_name,
+                'latitude': str(request.location.latitude),
+                'longitude': str(request.location.longitude),
+                'address': request.location.address or '',
+                'vehicle_registration': request.vehicle.registration,
+                'vehicle_colour': request.vehicle.colour,
+                'platform_fee': str(platform_fee),
+                'washer_payout': str(washer_payout),
             },
         )
-        
-        # Store payment record in MongoDB
-        payment_doc = {
+
+        # Create payment transaction record
+        await db.payment_transactions.insert_one({
             "id": str(uuid.uuid4()),
-            "stripe_payment_intent_id": payment_intent.id,
-            "job_id": request.job_id,
+            "session_id": session.id,
             "customer_id": request.customer_id,
-            "washer_id": request.washer_id,
-            "amount_cents": amount_cents,
-            "platform_fee_cents": platform_fee_cents,
-            "washer_payout_cents": washer_payout_cents,
-            "currency": "usd",
-            "status": "pending",
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-        }
-        
-        await db.payments.insert_one(payment_doc)
-        
-        return PaymentIntentResponse(
-            client_secret=payment_intent.client_secret,
-            payment_intent_id=payment_intent.id,
-            amount_cents=amount_cents,
-            platform_fee_cents=platform_fee_cents,
-            washer_payout_cents=washer_payout_cents,
-            publishable_key=STRIPE_PUBLISHABLE_KEY,
-        )
-    
-    except stripe.error.StripeError as e:
-        logger.error(f"Stripe error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error creating payment intent: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create payment intent")
+            "job_id": None,
+            "amount": SERVICE_PRICE_CENTS,
+            "currency": CURRENCY,
+            "platform_fee": platform_fee,
+            "washer_payout": washer_payout,
+            "payment_status": "pending",
+            "transfer_id": None,
+            "washer_id": None,
+            "metadata": {
+                'customer_name': request.customer_name,
+                'vehicle_registration': request.vehicle.registration,
+                'vehicle_colour': request.vehicle.colour,
+                'location_address': request.location.address or '',
+            },
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        })
 
-@api_router.post("/payments/confirm/{payment_intent_id}")
-async def confirm_payment(payment_intent_id: str):
-    """
-    Confirm payment status after completion.
-    Called by frontend after successful PaymentSheet completion.
-    """
+        return {"url": session.url, "session_id": session.id}
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe checkout error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/checkout/status/{session_id}")
+async def get_checkout_status(session_id: str):
+    """Poll checkout session status. Creates job on successful payment."""
     try:
-        # Retrieve the payment intent from Stripe
-        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-        
-        # Update payment record in MongoDB
-        await db.payments.update_one(
-            {"stripe_payment_intent_id": payment_intent_id},
-            {
-                "$set": {
-                    "status": payment_intent.status,
-                    "updated_at": datetime.utcnow(),
-                }
-            }
-        )
-        
-        # Get the payment record
-        payment = await db.payments.find_one({"stripe_payment_intent_id": payment_intent_id})
-        
-        if payment_intent.status == "succeeded":
-            # If there's a job associated, update its payment status
-            if payment and payment.get("job_id"):
-                await db.wash_jobs.update_one(
-                    {"id": payment["job_id"]},
-                    {"$set": {"payment_status": "paid", "updated_at": datetime.utcnow()}}
+        session = stripe.checkout.Session.retrieve(session_id)
+
+        existing_tx = await db.payment_transactions.find_one({"session_id": session_id})
+
+        if existing_tx:
+            new_status = "paid" if session.payment_status == "paid" else session.payment_status
+            if existing_tx.get("payment_status") != new_status:
+                await db.payment_transactions.update_one(
+                    {"session_id": session_id},
+                    {"$set": {"payment_status": new_status, "updated_at": datetime.now(timezone.utc)}}
                 )
-            
-            return {
-                "status": "succeeded",
-                "message": "Payment successful!",
-                "amount_cents": payment["amount_cents"] if payment else SERVICE_PRICE_CENTS,
-            }
-        else:
-            return {
-                "status": payment_intent.status,
-                "message": f"Payment status: {payment_intent.status}",
-            }
-    
-    except stripe.error.StripeError as e:
-        logger.error(f"Stripe error confirming payment: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error confirming payment: {e}")
-        raise HTTPException(status_code=500, detail="Failed to confirm payment")
 
-@api_router.get("/payments/status/{payment_intent_id}")
-async def get_payment_status(payment_intent_id: str):
-    """Get the current status of a payment"""
-    try:
-        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-        
-        payment = await db.payments.find_one({"stripe_payment_intent_id": payment_intent_id})
-        
+        # If paid and no job created yet, create the job
+        job = None
+        if session.payment_status == "paid" and existing_tx and not existing_tx.get("job_id"):
+            meta = session.metadata
+            job_obj = WashJob(
+                customer_id=meta.get("customer_id", ""),
+                customer_name=meta.get("customer_name", ""),
+                location=Location(
+                    latitude=float(meta.get("latitude", 0)),
+                    longitude=float(meta.get("longitude", 0)),
+                    address=meta.get("address") or None,
+                ),
+                vehicle=JobVehicleInfo(
+                    registration=meta.get("vehicle_registration", ""),
+                    colour=meta.get("vehicle_colour", ""),
+                ),
+            )
+            await db.jobs.insert_one(job_obj.model_dump())
+
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {"job_id": job_obj.id, "updated_at": datetime.now(timezone.utc)}}
+            )
+
+            await notify_all_washers(
+                "New Wash Request!",
+                f"{meta.get('customer_name', 'Customer')} needs a car wash",
+                {"type": "new_job", "job_id": job_obj.id}
+            )
+
+            job = {
+                "id": job_obj.id,
+                "customer_id": job_obj.customer_id,
+                "customer_name": job_obj.customer_name,
+                "status": job_obj.status,
+            }
+        elif existing_tx and existing_tx.get("job_id"):
+            # Job already created from a previous poll
+            existing_job = await db.jobs.find_one({"id": existing_tx["job_id"]}, {"_id": 0})
+            if existing_job:
+                job = {"id": existing_job["id"], "status": existing_job["status"]}
+
         return {
-            "status": payment_intent.status,
-            "amount_cents": payment_intent.amount,
-            "currency": payment_intent.currency,
-            "platform_fee_cents": payment["platform_fee_cents"] if payment else 0,
-            "washer_payout_cents": payment["washer_payout_cents"] if payment else 0,
+            "status": session.status,
+            "payment_status": session.payment_status,
+            "amount_total": session.amount_total,
+            "currency": session.currency,
+            "job": job,
         }
+
     except stripe.error.StripeError as e:
+        logger.error(f"Stripe status error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhooks for payment events"""
+    body = await request.body()
+    try:
+        event = json.loads(body)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+
+    event_type = event.get("type", "")
+
+    if event_type == "checkout.session.completed":
+        session_data = event.get("data", {}).get("object", {})
+        session_id = session_data.get("id")
+        if session_id:
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc)}}
+            )
+
+    return {"received": True}
 
 @api_router.get("/payments/config")
 async def get_payment_config():
-    """Get Stripe publishable key and pricing info"""
+    """Get pricing info for the service"""
     return {
-        "publishable_key": STRIPE_PUBLISHABLE_KEY,
-        "service_price_cents": SERVICE_PRICE_CENTS,
+        "service_price_pence": SERVICE_PRICE_CENTS,
+        "service_price_display": f"\u00a3{SERVICE_PRICE_CENTS / 100:.2f}",
         "platform_fee_percent": PLATFORM_FEE_PERCENT,
+        "currency": CURRENCY,
     }
 
 # ==================== END PAYMENTS ====================

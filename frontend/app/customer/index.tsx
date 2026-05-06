@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   SafeAreaView,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
@@ -128,37 +129,14 @@ export default function CustomerScreen() {
       return;
     }
 
-    const confirmBooking = (): Promise<boolean> => {
-      return new Promise((resolve) => {
-        if (Platform.OS === 'web') {
-          resolve(window.confirm('Confirm booking?\n\nExterior Car Wash: £25.00'));
-        } else {
-          Alert.alert(
-            'Confirm Booking',
-            'Exterior Car Wash: £25.00',
-            [
-              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Pay £25', onPress: () => resolve(true) },
-            ]
-          );
-        }
-      });
-    };
-
-    const confirmed = await confirmBooking();
-    if (!confirmed) return;
-
     setBooking(true);
     try {
-      const paymentResponse = await axios.post(`${API_URL}/api/payments/create-intent`, {
-        customer_id: user.id,
-      });
-
-      await axios.post(`${API_URL}/api/payments/confirm/${paymentResponse.data.payment_intent_id}`);
-
-      const jobResponse = await axios.post(`${API_URL}/api/jobs`, {
+      const originUrl = Platform.OS === 'web' ? window.location.origin : API_URL;
+      
+      const response = await axios.post(`${API_URL}/api/checkout/create-session`, {
         customer_id: user.id,
         customer_name: user.name,
+        origin_url: originUrl,
         location: {
           latitude: location.latitude,
           longitude: location.longitude,
@@ -168,14 +146,18 @@ export default function CustomerScreen() {
           registration: carReg.trim().toUpperCase(),
           colour: carColour.trim(),
         },
-        payment_intent_id: paymentResponse.data.payment_intent_id,
       });
 
-      setActiveJob(jobResponse.data);
-      showAlert('Booked!', 'A washer will be with you soon');
+      // Redirect to Stripe Checkout
+      const checkoutUrl = response.data.url;
+      if (Platform.OS === 'web') {
+        window.location.href = checkoutUrl;
+      } else {
+        Linking.openURL(checkoutUrl);
+      }
     } catch (error) {
-      console.error('Booking error:', error);
-      showAlert('Error', 'Failed to book. Please try again.');
+      console.error('Checkout error:', error);
+      showAlert('Error', 'Failed to start payment. Please try again.');
     } finally {
       setBooking(false);
     }

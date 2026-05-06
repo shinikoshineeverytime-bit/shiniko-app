@@ -10,10 +10,12 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
+  Linking,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import Icon from '../../components/Icon';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import axios from 'axios';
 import MapView, { MapViewHandle } from '../../components/MapView';
 import { useAuth } from '../../context/AuthContext';
@@ -40,6 +42,7 @@ interface Job {
 export default function WasherHomeScreen() {
   const { user, logout } = useAuth();
   const { notification } = useNotifications(user?.id || null);
+  const params = useLocalSearchParams();
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [activeTab, setActiveTab] = useState<'available' | 'my_jobs'>('available');
@@ -48,6 +51,11 @@ export default function WasherHomeScreen() {
   const [washerLocation, setWasherLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [showMap, setShowMap] = useState(false);
   const mapRef = useRef<MapViewHandle>(null);
+  
+  // Stripe Connect state
+  const [connectStatus, setConnectStatus] = useState<any>(null);
+  const [connectLoading, setConnectLoading] = useState(false);
+  const [earnings, setEarnings] = useState<any>(null);
 
   useEffect(() => {
     if (!user) {
@@ -56,7 +64,65 @@ export default function WasherHomeScreen() {
     }
     getLocation();
     fetchJobs();
+    checkConnectAccount();
+    fetchEarnings();
   }, [user]);
+
+  // Check if returning from onboarding
+  useEffect(() => {
+    if (params.onboarding === 'complete') {
+      checkConnectAccount();
+    }
+  }, [params.onboarding]);
+
+  const checkConnectAccount = async () => {
+    if (!user) return;
+    try {
+      const response = await axios.get(`${API_URL}/api/connect/account-status/${user.id}`);
+      setConnectStatus(response.data);
+    } catch (error) {
+      console.error('Connect status error:', error);
+    }
+  };
+
+  const fetchEarnings = async () => {
+    if (!user) return;
+    try {
+      const response = await axios.get(`${API_URL}/api/washer/${user.id}/earnings`);
+      setEarnings(response.data);
+    } catch (error) {
+      console.error('Earnings error:', error);
+    }
+  };
+
+  const setupConnectAccount = async () => {
+    if (!user) return;
+    setConnectLoading(true);
+    try {
+      const originUrl = Platform.OS === 'web' ? window.location.origin : API_URL;
+      const response = await axios.post(`${API_URL}/api/connect/create-account`, {
+        user_id: user.id,
+        origin_url: originUrl,
+      });
+
+      if (response.data.onboarding_url) {
+        if (Platform.OS === 'web') {
+          window.location.href = response.data.onboarding_url;
+        } else {
+          Linking.openURL(response.data.onboarding_url);
+        }
+      }
+    } catch (error: any) {
+      const detail = error.response?.data?.detail || 'Failed to set up account';
+      if (Platform.OS === 'web') {
+        window.alert(`Setup Info: ${detail}`);
+      } else {
+        Alert.alert('Setup Info', detail);
+      }
+    } finally {
+      setConnectLoading(false);
+    }
+  };
 
   // Refresh when notification received (new job available)
   useEffect(() => {
@@ -122,6 +188,20 @@ export default function WasherHomeScreen() {
 
   const acceptJob = async (jobId: string) => {
     if (!user) return;
+    
+    // Check if Connect account is set up
+    if (!connectStatus?.onboarding_complete) {
+      Alert.alert(
+        'Payment Setup Required',
+        'You need to set up your payment account before accepting jobs.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Set Up Now', onPress: setupConnectAccount },
+        ]
+      );
+      return;
+    }
+    
     try {
       await axios.put(`${API_URL}/api/jobs/${jobId}/accept`, {
         washer_id: user.id,
@@ -131,7 +211,15 @@ export default function WasherHomeScreen() {
       fetchJobs();
       setActiveTab('my_jobs');
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to accept job');
+      const detail = error.response?.data?.detail || 'Failed to accept job';
+      if (detail.includes('payment account')) {
+        Alert.alert('Payment Setup Required', detail, [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Set Up Now', onPress: setupConnectAccount },
+        ]);
+      } else {
+        Alert.alert('Error', detail);
+      }
     }
   };
 
@@ -436,6 +524,55 @@ export default function WasherHomeScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Connect Onboarding Banner */}
+      {connectStatus && !connectStatus.onboarding_complete && (
+        <View style={styles.connectBanner}>
+          <LinearGradient
+            colors={['#1a1a1a', '#141414']}
+            style={styles.connectBannerGradient}
+          >
+            <View style={styles.connectBannerContent}>
+              <Icon name="card" size={24} color="#FFB800" />
+              <View style={styles.connectBannerText}>
+                <Text style={styles.connectBannerTitle}>Set Up Payments</Text>
+                <Text style={styles.connectBannerDesc}>Connect your bank to receive payouts</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.connectSetupButton}
+              onPress={setupConnectAccount}
+              disabled={connectLoading}
+            >
+              {connectLoading ? (
+                <ActivityIndicator size="small" color="#0A0A0A" />
+              ) : (
+                <Text style={styles.connectSetupButtonText}>Set Up</Text>
+              )}
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
+      )}
+
+      {/* Earnings Section */}
+      {connectStatus?.onboarding_complete && earnings && (
+        <View style={styles.earningsBar}>
+          <View style={styles.earningsItem}>
+            <Text style={styles.earningsLabel}>Earned</Text>
+            <Text style={styles.earningsValue}>{earnings.total_earned_display}</Text>
+          </View>
+          <View style={styles.earningsDivider} />
+          <View style={styles.earningsItem}>
+            <Text style={styles.earningsLabel}>Jobs</Text>
+            <Text style={styles.earningsValue}>{earnings.total_jobs}</Text>
+          </View>
+          <View style={styles.earningsDivider} />
+          <View style={styles.earningsItem}>
+            <Icon name="checkmark-circle" size={14} color="#00D4AA" />
+            <Text style={[styles.earningsLabel, { color: '#00D4AA' }]}>Payouts Active</Text>
+          </View>
+        </View>
+      )}
+
       {/* Map View */}
       {showMap && washerLocation && (
         <View style={styles.mapContainer}>
@@ -709,5 +846,76 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 8,
     textAlign: 'center',
+  },
+  connectBanner: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  connectBannerGradient: {
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 184, 0, 0.2)',
+  },
+  connectBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  connectBannerText: {
+    flex: 1,
+  },
+  connectBannerTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  connectBannerDesc: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
+  connectSetupButton: {
+    backgroundColor: '#FFB800',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  connectSetupButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0A0A0A',
+  },
+  earningsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    backgroundColor: '#151515',
+    borderRadius: 12,
+    padding: 14,
+  },
+  earningsItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  earningsLabel: {
+    fontSize: 12,
+    color: '#888',
+  },
+  earningsValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  earningsDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#2a2a2a',
   },
 });
