@@ -9,15 +9,20 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
+      "bundleIdentifier": "com.shiniko.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Find car washers near you"
+        "NSLocationWhenInUseUsageDescription": "Shiniko uses your location to find car washers near you and show them where your car is.",
+        "NSLocationAlwaysUsageDescription": "Shiniko uses your location to connect you with nearby car washers."
       },
       "config": {
         "googleMapsApiKey": "AIzaSyC8rhnTkdB7ocVc8XEcSx_5Z4XiB46TgUY"
       }
     },
     "android": {
+      "package": "com.shiniko.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0A0A0A"
@@ -42,7 +47,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Find car washers near you"
+          "locationWhenInUsePermission": "Shiniko uses your location to find car washers near you."
         }
       ],
       [
@@ -56,6 +61,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    },
+    "owner": ""
   }
 }
