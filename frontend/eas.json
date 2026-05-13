@@ -11,27 +11,21 @@
       }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "ios": {
-        "buildNumber": "1"
-      },
       "android": {
-        "buildNumber": 1
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
     "production": {
-      "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
-      },
       "android": {
-        "serviceAccountKeyPath": "",
         "track": "production"
       }
     }
