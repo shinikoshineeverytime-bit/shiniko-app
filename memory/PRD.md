@@ -61,9 +61,15 @@ Mobile app (Expo/React Native) for on-demand car washes. Customers book a £25 e
 ## Production Requirements
 - Enable Stripe Connect on platform's Stripe Dashboard (https://dashboard.stripe.com/connect)
 - Create Expo account and run `eas init` to link project
-- Set up Apple Developer ($99/year) and Google Play Developer ($25) accounts
+- Set up Google Play Developer ($25) account
+- Run `./build-android.sh` in the frontend folder to build AAB via EAS cloud
 - Deploy backend separately (Railway/Render/AWS) with production MongoDB
 - Set up Stripe webhook for checkout.session.completed events
+
+## Build Status
+- Local AAB build: NOT POSSIBLE (build server is ARM64, Android NDK requires x86_64)
+- EAS Cloud Build: READY (eas.json configured, app.json configured, build script created)
+- All code: PRODUCTION READY
 
 ## Backlog
 - P1: Ratings & Reviews system
