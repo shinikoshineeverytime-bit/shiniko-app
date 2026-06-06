@@ -57,14 +57,15 @@
           "color": "#00D4AA"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "a979ee15-9aa7-427b-91bb-dc37eb33de91"
       }
     },
     "owner": "shinikoshineeverytime"
